@@ -1,0 +1,13 @@
+node_modules/
+.env
+auth_store/
+auth_store_baileys_hardened/
+auth_store_wwjs/
+sessions/
+pairing_code.txt
+.pairing_code.json
+qr_code.txt
+*.tar.gz
+*.log
+dist/
+vendor-chrome/

@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"name": "ale",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"claudeCode.useTerminal": true
+	}
+}

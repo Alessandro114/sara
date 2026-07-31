@@ -1,0 +1,7 @@
+
+Generated 1113 test cases
+  Price extraction: 972
+  Sector detection: 80
+  Edge cases: 11
+  No hallucination: 10
+  Cross-sector: 40

@@ -1,0 +1,18 @@
+[
+  {"id":1,"sector":"general","lang":"it","text":"Avete un divano 3 posti in velluto?","expectField":"contains","expectValue":"Milano 3P","variant":"furniture-catalog"},
+  {"id":2,"sector":"general","lang":"it","text":"Quanto costa il divano Milano 3 posti?","expectField":"contains","expectValue":"1.890","variant":"furniture-price"},
+  {"id":3,"sector":"general","lang":"it","text":"Che colori avete per il velluto?","expectField":"contains","expectValue":"blu notte","variant":"furniture-colors"},
+  {"id":4,"sector":"general","lang":"it","text":"Fate consegna a Bucarest?","expectField":"contains","expectValue":"Romania","variant":"furniture-delivery"},
+  {"id":5,"sector":"general","lang":"it","text":"Vorrei prenotare una visita in showroom","expectField":"contains","expectValue":"showroom","variant":"furniture-booking"},
+  {"id":6,"sector":"general","lang":"en","text":"Do you have a 3-seater sofa in velvet?","expectField":"contains","expectValue":"Milano","variant":"furniture-english"},
+  {"id":7,"sector":"general","lang":"it","text":"Avete divani pet-friendly?","expectField":"contains","expectValue":"microfibra","variant":"furniture-petfriendly"},
+  {"id":8,"sector":"general","lang":"it","text":"Vorrei prenotare una consulenza tricologica a Milano","expectField":"contains","expectValue":"consulenza","variant":"sanders-booking"},
+  {"id":9,"sector":"general","lang":"it","text":"Quanto dura il percorso anticaduta capelli?","expectField":"contains","expectValue":"12","variant":"sanders-duration"},
+  {"id":10,"sector":"general","lang":"it","text":"Le sedute sono dolorose?","expectField":"contains","expectValue":"indolori","variant":"sanders-pain"},
+  {"id":11,"sector":"general","lang":"it","text":"Funziona davvero il trattamento anticaduta?","expectField":"contains","expectValue":"3-4 mesi","variant":"sanders-results"},
+  {"id":12,"sector":"general","lang":"it","text":"Cosa succede se interrompo il trattamento?","expectField":"contains","expectValue":"ridurre","variant":"sanders-interruption"},
+  {"id":13,"sector":"general","lang":"it","text":"Avete un centro a Napoli?","expectField":"contains","expectValue":"Napoli","variant":"sanders-location"},
+  {"id":14,"sector":"general","lang":"en","text":"I am losing my hair, can you help?","expectField":"contains","expectValue":"consult","variant":"sanders-english"},
+  {"id":15,"sector":"general","lang":"it","text":"Che giorno passano per la plastica a Cairate?","expectField":"contains","expectValue":"SIECO","variant":"waste-cairate"},
+  {"id":16,"sector":"general","lang":"it","text":"Dove butto le pile?","expectField":"contains","expectValue":"piattaforma ecologica","variant":"waste-batteries"}
+]

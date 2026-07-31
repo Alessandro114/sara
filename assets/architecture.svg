@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+
+  <!-- Background -->
+  <rect width="900" height="560" fill="#0b1014" rx="16"/>
+
+  <!-- Subtle grid -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+    </pattern>
+    <!-- Glow filter -->
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-sm" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="900" height="560" fill="url(#grid)" rx="16"/>
+
+  <!-- Title -->
+  <text x="450" y="38" text-anchor="middle" fill="#e9edef" font-size="17" font-weight="700" letter-spacing="0.5">S.C.A.L.A. — SARA Architecture</text>
+  <text x="450" y="56" text-anchor="middle" fill="#8696a0" font-size="11">Agentic AI Platform · Real-time WhatsApp intelligence</text>
+
+  <!-- ===== ROW 1: Customer + WAHA ===== -->
+
+  <!-- Customer node -->
+  <rect x="30" y="100" width="130" height="72" rx="12" fill="#182229" stroke="#00a884" stroke-width="1.5" filter="url(#glow-sm)"/>
+  <text x="95" y="125" text-anchor="middle" fill="#00a884" font-size="22">📱</text>
+  <text x="95" y="146" text-anchor="middle" fill="#e9edef" font-size="13" font-weight="600">Customer</text>
+  <text x="95" y="163" text-anchor="middle" fill="#8696a0" font-size="10">WhatsApp</text>
+
+  <!-- Arrow: Customer → WAHA -->
+  <line x1="160" y1="136" x2="210" y2="136" stroke="#00a884" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <polygon points="210,131 220,136 210,141" fill="#00a884"/>
+  <text x="190" y="128" text-anchor="middle" fill="#8696a0" font-size="9">WA msg</text>
+
+  <!-- WAHA node -->
+  <rect x="220" y="100" width="130" height="72" rx="12" fill="#182229" stroke="#53bdeb" stroke-width="1.5" filter="url(#glow-sm)"/>
+  <text x="285" y="125" text-anchor="middle" fill="#53bdeb" font-size="22">🔌</text>
+  <text x="285" y="146" text-anchor="middle" fill="#e9edef" font-size="13" font-weight="600">WAHA</text>
+  <text x="285" y="163" text-anchor="middle" fill="#8696a0" font-size="10">WA HTTP API · :3004</text>
+
+  <!-- Arrow: WAHA → SARA Core -->
+  <line x1="350" y1="136" x2="400" y2="136" stroke="#53bdeb" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <polygon points="400,131 410,136 400,141" fill="#53bdeb"/>
+  <text x="375" y="128" text-anchor="middle" fill="#8696a0" font-size="9">webhook</text>
+
+  <!-- ===== SARA CORE (center, tall box) ===== -->
+  <rect x="410" y="80" width="180" height="112" rx="14" fill="#0d2620" stroke="#00a884" stroke-width="2" filter="url(#glow)"/>
+  <rect x="410" y="80" width="180" height="30" rx="14" fill="#00a884" opacity="0.15"/>
+  <text x="500" y="100" text-anchor="middle" fill="#00a884" font-size="13" font-weight="700" letter-spacing="1">SARA CORE</text>
+  <text x="500" y="116" text-anchor="middle" fill="#8696a0" font-size="10">waha-bridge · :3008</text>
+  <line x1="420" y1="122" x2="580" y2="122" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="500" y="138" text-anchor="middle" fill="#e9edef" font-size="10">chatChainWithTools()</text>
+  <text x="500" y="153" text-anchor="middle" fill="#e9edef" font-size="10">autonomy-gate · PII filter</text>
+  <text x="500" y="168" text-anchor="middle" fill="#e9edef" font-size="10">tool-dispatcher (30+ handlers)</text>
+  <text x="500" y="183" text-anchor="middle" fill="#8696a0" font-size="10">sara-api · :3006</text>
+
+  <!-- ===== ROW 2 below SARA: AI providers, RAG, Vertical Brain, Function Calling ===== -->
+
+  <!-- AI Provider Chain -->
+  <rect x="30" y="248" width="180" height="104" rx="12" fill="#182229" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="120" y="268" text-anchor="middle" fill="#a78bfa" font-size="11" font-weight="700" letter-spacing="0.5">AI PROVIDER CHAIN</text>
+  <line x1="40" y1="275" x2="200" y2="275" stroke="rgba(167,139,250,0.2)" stroke-width="1"/>
+  <text x="120" y="292" text-anchor="middle" fill="#e9edef" font-size="11">1· Groq  (primary)</text>
+  <text x="120" y="308" text-anchor="middle" fill="#e9edef" font-size="11">2· Cerebras</text>
+  <text x="120" y="324" text-anchor="middle" fill="#e9edef" font-size="11">3· SambaNova</text>
+  <text x="120" y="340" text-anchor="middle" fill="#e9edef" font-size="11">4· Mistral  (fallback)</text>
+
+  <!-- RAG Engine -->
+  <rect x="240" y="248" width="180" height="104" rx="12" fill="#182229" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="330" y="268" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="700" letter-spacing="0.5">RAG ENGINE</text>
+  <line x1="250" y1="275" x2="410" y2="275" stroke="rgba(245,158,11,0.2)" stroke-width="1"/>
+  <text x="330" y="292" text-anchor="middle" fill="#e9edef" font-size="11">pgvector · 1024d</text>
+  <text x="330" y="308" text-anchor="middle" fill="#e9edef" font-size="11">mxbai-embed-large</text>
+  <text x="330" y="324" text-anchor="middle" fill="#e9edef" font-size="11">~1.400 chunks</text>
+  <text x="330" y="340" text-anchor="middle" fill="#e9edef" font-size="11">KB · docs · history</text>
+
+  <!-- Vertical Brain -->
+  <rect x="450" y="248" width="185" height="104" rx="12" fill="#182229" stroke="#34d399" stroke-width="1.5"/>
+  <text x="542" y="268" text-anchor="middle" fill="#34d399" font-size="11" font-weight="700" letter-spacing="0.5">VERTICAL BRAIN</text>
+  <line x1="460" y1="275" x2="625" y2="275" stroke="rgba(52,211,153,0.2)" stroke-width="1"/>
+  <text x="542" y="292" text-anchor="middle" fill="#e9edef" font-size="11">DineOS · PropertyOS</text>
+  <text x="542" y="308" text-anchor="middle" fill="#e9edef" font-size="11">BeautyOS · RetailOS</text>
+  <text x="542" y="324" text-anchor="middle" fill="#e9edef" font-size="11">StudioOS · TravelOS</text>
+  <text x="542" y="340" text-anchor="middle" fill="#8696a0" font-size="10">20 verticals total</text>
+
+  <!-- Function Calling -->
+  <rect x="660" y="248" width="210" height="104" rx="12" fill="#182229" stroke="#f87171" stroke-width="1.5"/>
+  <text x="765" y="268" text-anchor="middle" fill="#f87171" font-size="11" font-weight="700" letter-spacing="0.5">FUNCTION CALLING</text>
+  <line x1="670" y1="275" x2="860" y2="275" stroke="rgba(248,113,113,0.2)" stroke-width="1"/>
+  <text x="765" y="292" text-anchor="middle" fill="#e9edef" font-size="11">book_table()</text>
+  <text x="765" y="308" text-anchor="middle" fill="#e9edef" font-size="11">search_listings()</text>
+  <text x="765" y="324" text-anchor="middle" fill="#e9edef" font-size="11">check_availability()</text>
+  <text x="765" y="340" text-anchor="middle" fill="#8696a0" font-size="10">84 tools · Groq function calling</text>
+
+  <!-- ===== Arrows: SARA Core → each box ===== -->
+
+  <!-- SARA → AI Provider -->
+  <line x1="430" y1="192" x2="120" y2="248" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <polygon points="116,244 120,255 126,245" fill="#a78bfa"/>
+
+  <!-- SARA → RAG -->
+  <line x1="470" y1="192" x2="330" y2="248" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <polygon points="326,244 330,255 336,245" fill="#f59e0b"/>
+
+  <!-- SARA → Vertical Brain -->
+  <line x1="530" y1="192" x2="542" y2="248" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <polygon points="537,244 542,255 547,245" fill="#34d399"/>
+
+  <!-- SARA → Function Calling -->
+  <line x1="575" y1="192" x2="765" y2="248" stroke="#f87171" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <polygon points="761,244 765,255 770,245" fill="#f87171"/>
+
+  <!-- ===== ROW 3: Response path ===== -->
+  <text x="450" y="400" text-anchor="middle" fill="#8696a0" font-size="11">Response assembled → WAHA outbound → Customer</text>
+
+  <!-- Response flow arrows -->
+  <!-- Function calling → response bar -->
+  <line x1="765" y1="352" x2="765" y2="415" stroke="#f87171" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>
+  <line x1="542" y1="352" x2="542" y2="415" stroke="#34d399" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>
+  <line x1="330" y1="352" x2="330" y2="415" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>
+  <line x1="120" y1="352" x2="120" y2="415" stroke="#a78bfa" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>
+
+  <!-- Horizontal consolidation line -->
+  <line x1="120" y1="415" x2="765" y2="415" stroke="rgba(0,168,132,0.4)" stroke-width="1.5"/>
+  <!-- Down to SARA -->
+  <line x1="500" y1="415" x2="500" y2="455" stroke="#00a884" stroke-width="1.5"/>
+  <polygon points="495,455 500,465 505,455" fill="#00a884"/>
+
+  <!-- Response node -->
+  <rect x="350" y="465" width="300" height="44" rx="10" fill="#0d2620" stroke="#00a884" stroke-width="1.5" filter="url(#glow-sm)"/>
+  <text x="500" y="484" text-anchor="middle" fill="#00a884" font-size="12" font-weight="700">SARA Response</text>
+  <text x="500" y="500" text-anchor="middle" fill="#8696a0" font-size="10">WAHA outbound → WhatsApp → Customer ✓</text>
+
+  <!-- ===== Bottom watermark ===== -->
+  <text x="450" y="545" text-anchor="middle" fill="rgba(255,255,255,0.12)" font-size="10" letter-spacing="2">S.C.A.L.A. ENTERPRISE AI PLATFORM · get-scala.com</text>
+
+</svg>
