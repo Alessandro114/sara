@@ -1,0 +1,60 @@
+name: 🤖 S.A.R.A. Bot — Deploy
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  deploy:
+    name: Build & Deploy SARA WhatsApp Bot
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🔍 TypeScript Check
+        run: npx tsc --noEmit
+
+      - name: 🏗️ Build
+        run: npx tsc
+
+      - name: 🔑 Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GCP_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.GCP_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: 🚀 Deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.GCP_HOST }}
+          DEPLOY_USER: ${{ secrets.GCP_DEPLOY_USER || 'ale' }}
+        run: |
+          tar czf /tmp/sara-dist.tar.gz -C dist .
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no /tmp/sara-dist.tar.gz ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/sara-dist.tar.gz
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} << 'DEPLOY'
+            mkdir -p /home/ale/whatsapp-bot/dist
+            tar xzf /tmp/sara-dist.tar.gz -C /home/ale/whatsapp-bot/dist/
+            rm /tmp/sara-dist.tar.gz
+            if command -v pm2 &>/dev/null && pm2 describe whatsapp-bot &>/dev/null 2>&1; then
+              pm2 restart whatsapp-bot
+              echo '✅ SARA bot restarted'
+            else
+              echo '⚠️ PM2 process "whatsapp-bot" not found'
+            fi
+            sleep 3
+            curl -sf http://localhost:3006/api/sara/health > /dev/null 2>&1 && echo '✅ SARA health OK' || echo '⚠️ Health check failed'
+          DEPLOY
