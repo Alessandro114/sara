@@ -1,0 +1,12 @@
+auth_store/
+auth_store_baileys_hardened/
+auth_store_wwjs/
+sessions/
+node_modules/
+dist/
+.env
+*.log
+*.tar.gz
+.git/
+pairing_code.txt
+.pairing_code.json

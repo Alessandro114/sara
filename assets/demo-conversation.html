@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SARA AI — DineOS Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0b1014;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .phone {
+      width: 380px;
+      background: #111b21;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: #202c33;
+      padding: 14px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .back-arrow {
+      color: #00a884;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #00a884 0%, #006d5b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .contact-info { flex: 1; }
+    .contact-name {
+      color: #e9edef;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .contact-status {
+      color: #8696a0;
+      font-size: 12px;
+      margin-top: 1px;
+    }
+
+    .header-icons {
+      display: flex;
+      gap: 18px;
+      color: #8696a0;
+      font-size: 18px;
+    }
+
+    /* ---- Chat background ---- */
+    .chat {
+      background: #0b141a;
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(0,168,132,0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(0,168,132,0.02) 0%, transparent 50%);
+      padding: 12px 10px 16px;
+      min-height: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* ---- Date separator ---- */
+    .date-sep {
+      text-align: center;
+      margin: 6px 0 10px;
+    }
+    .date-sep span {
+      background: #182229;
+      color: #8696a0;
+      font-size: 11.5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    /* ---- Bubbles ---- */
+    .msg { display: flex; flex-direction: column; max-width: 80%; margin-bottom: 2px; }
+    .msg.incoming { align-self: flex-start; }
+    .msg.outgoing { align-self: flex-end; }
+
+    .bubble {
+      padding: 7px 10px 6px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.45;
+      position: relative;
+      word-break: break-word;
+    }
+
+    .msg.incoming .bubble {
+      background: #202c33;
+      color: #e9edef;
+      border-top-left-radius: 2px;
+    }
+
+    .msg.outgoing .bubble {
+      background: #005c4b;
+      color: #e9edef;
+      border-top-right-radius: 2px;
+    }
+
+    /* tail */
+    .msg.incoming .bubble::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -7px;
+      border: 6px solid transparent;
+      border-right-color: #202c33;
+      border-top-color: #202c33;
+    }
+    .msg.outgoing .bubble::after {
+      content: '';
+      position: absolute;
+      top: 0; right: -7px;
+      border: 6px solid transparent;
+      border-left-color: #005c4b;
+      border-top-color: #005c4b;
+    }
+
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      justify-content: flex-end;
+      margin-top: 2px;
+      padding: 0 2px;
+    }
+    .meta-time { color: #8696a0; font-size: 11px; }
+    .checkmarks { color: #53bdeb; font-size: 13px; }
+
+    /* SARA badge */
+    .sara-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0,168,132,0.18);
+      border: 1px solid rgba(0,168,132,0.35);
+      color: #00a884;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 10px;
+      margin-bottom: 4px;
+      align-self: flex-start;
+    }
+    .sara-badge .dot {
+      width: 5px; height: 5px;
+      background: #00a884;
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    /* function-call chip */
+    .fn-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(83,189,235,0.1);
+      border: 1px solid rgba(83,189,235,0.25);
+      color: #53bdeb;
+      font-size: 11px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      padding: 3px 9px;
+      border-radius: 12px;
+      margin: 5px 0 3px;
+    }
+    .fn-chip .icon { font-size: 12px; }
+
+    /* ---- Input bar ---- */
+    .input-bar {
+      background: #202c33;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .input-field {
+      flex: 1;
+      background: #2a3942;
+      border-radius: 22px;
+      padding: 9px 14px;
+      color: #8696a0;
+      font-size: 14px;
+    }
+    .mic-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #00a884;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .attach-icon { color: #8696a0; font-size: 20px; }
+  </style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="back-arrow">&#8249;</div>
+    <div class="avatar">🍽️</div>
+    <div class="contact-info">
+      <div class="contact-name">Ristorante La Brace</div>
+      <div class="contact-status">SARA AI · online</div>
+    </div>
+    <div class="header-icons">
+      <span>&#9742;</span>
+      <span>&#8942;</span>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat">
+
+    <div class="date-sep"><span>Oggi</span></div>
+
+    <!-- Customer message 1 -->
+    <div class="msg outgoing">
+      <div class="bubble">
+        Ciao, vorrei prenotare un tavolo per 4 persone sabato sera alle 20:30
+      </div>
+      <div class="meta">
+        <span class="meta-time">20:14</span>
+        <span class="checkmarks">&#10003;&#10003;</span>
+      </div>
+    </div>
+
+    <!-- SARA reply 1 -->
+    <div class="msg incoming">
+      <div class="sara-badge"><span class="dot"></span> SARA AI · DineOS</div>
+      <div class="fn-chip"><span class="icon">&#9881;</span> check_availability(4 persone, sab 20:30)</div>
+      <div class="bubble">
+        Perfetto! Ho verificato la disponibilita per sabato sera.<br><br>
+        Tavolo per <strong>4 persone</strong> disponibile alle <strong>20:30</strong> ✓<br><br>
+        A nome di chi confermo la prenotazione?
+      </div>
+      <div class="meta">
+        <span class="meta-time">20:14</span>
+      </div>
+    </div>
+
+    <!-- Customer message 2 -->
+    <div class="msg outgoing">
+      <div class="bubble">
+        Si, a nome Marco Rossi
+      </div>
+      <div class="meta">
+        <span class="meta-time">20:15</span>
+        <span class="checkmarks">&#10003;&#10003;</span>
+      </div>
+    </div>
+
+    <!-- SARA reply 2 -->
+    <div class="msg incoming">
+      <div class="sara-badge"><span class="dot"></span> SARA AI · DineOS</div>
+      <div class="fn-chip"><span class="icon">&#9881;</span> book_table(Marco Rossi, 4, sab 02-ago 20:30)</div>
+      <div class="bubble">
+        Prenotazione confermata! 🎉<br><br>
+        📋 <strong>Riepilogo:</strong><br>
+        · Tavolo per 4 persone<br>
+        · Sabato 2 agosto · ore 20:30<br>
+        · A nome: Marco Rossi<br><br>
+        Vi aspettiamo! Per modifiche o cancellazioni, scrivetemi qui.
+      </div>
+      <div class="meta">
+        <span class="meta-time">20:15</span>
+      </div>
+    </div>
+
+  </div><!-- /chat -->
+
+  <!-- Input bar -->
+  <div class="input-bar">
+    <span class="attach-icon">&#128247;</span>
+    <div class="input-field">Scrivi un messaggio...</div>
+    <div class="mic-btn">&#127908;</div>
+  </div>
+
+</div><!-- /phone -->
+</body>
+</html>
