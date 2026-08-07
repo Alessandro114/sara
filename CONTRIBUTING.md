@@ -40,13 +40,44 @@ Thanks for your interest in contributing to SARA! Here's how to get started.
 4. Open a PR against `main` with a clear description of what changed and why
 5. Wait for review — we aim to respond within 48 hours
 
+## Branch Naming
+
+Use descriptive branch names:
+- `feat/<short-description>` — new feature
+- `fix/<short-description>` — bug fix
+- `docs/<short-description>` — documentation only
+- `refactor/<short-description>` — code refactor, no functional change
+
+## Code Style
+
+- TypeScript throughout — no plain JS files in `src/`.
+- Use `const` / `let`; avoid `var`.
+- Prefer explicit types over `any`.
+- No `console.log` in production paths — use the project logger.
+- Commit messages in the imperative mood: `fix: …`, `feat: …`, `docs: …`.
+
+## Pricing & Commercial Content
+
+If you modify any text referencing plans or pricing, the canonical values are:
+
+| Plan   | Price         | Notes                                      |
+|--------|---------------|--------------------------------------------|
+| GROWTH | €97/month     | 5 verticals, 6 users, 30K AI credits, 14-day trial |
+| SCALE  | €197/month    | All 20 verticals, unlimited users, SARA WhatsApp |
+
+- **No FREE plan exists** — do not introduce a free tier.
+- **SARA WhatsApp is SCALE-only** — do not list it under GROWTH.
+- Do not introduce pricing text that contradicts the table above.
+
 ## Code of Conduct
 
 Be respectful, constructive, and inclusive. We're building something useful together.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the AGPL-3.0 license.
+By contributing, you agree that your contributions will be licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+See [LICENSE](./LICENSE) for the full license text.
 
 ## Questions?
 
