@@ -10,7 +10,7 @@
 
 **SARA is a self-hostable AI agent for WhatsApp that understands your industry. 20 verticals. 30+ tools. Function calling. RAG. Multi-language. Works out of the box.**
 
-[Documentation](#configuration) · [Cloud Version](https://sara.get-scala.com) · [Discord](#contributing) · [Contributing](CONTRIBUTING.md)
+[Documentation](#configuration) · [Cloud Version](https://get-scala.com) · [Contributing](CONTRIBUTING.md)
 
 ![SARA Demo](assets/demo.png)
 
