@@ -9,7 +9,8 @@ import pg from 'pg';
 import 'dotenv/config';
 
 const { Pool } = pg;
-const pool = new Pool({ connectionString: process.env.DATABASE_URL || 'postgresql://scalaai:ScalaAI2026@127.0.0.1:5432/scala_bot' });
+if (!process.env.DATABASE_URL) { throw new Error('DATABASE_URL env var required'); }
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const API_KEY = process.env.GEMINI_API_KEY;
 
 // ─── Embedding helper with retry ───
