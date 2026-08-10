@@ -4,9 +4,9 @@
 # 2) runs the Playwright hallucination test (correct prices, no canned fallback)
 # Exit 0 = all good. Non-zero = something needs attention.
 set -u
-cd /home/ale/whatsapp-bot
-LOG=/home/ale/.pm2/logs/whatsapp-bot-out.log
-PID=$(pgrep -f "node /home/ale/whatsapp-bot/dist/index.js" | grep -v bash | head -1)
+cd $SARA_HOME
+LOG=${SARA_HOME}/logs/sara.log
+PID=$(pgrep -f "node $SARA_HOME/dist/index.js" | grep -v bash | head -1)
 
 echo "════════ SARA SELF-TEST ════════"
 # ── 1. pairing check ──
@@ -14,7 +14,7 @@ LAST=$(grep -a "\"pid\":$PID" "$LOG" 2>/dev/null | grep -aoE "connection OPEN|QR
 P=$(stat -c %Y qr_code.txt 2>/dev/null); sleep 8; Q=$(stat -c %Y qr_code.txt 2>/dev/null)
 if [ "$P" != "$Q" ]; then
   echo "❌ PAIRING: QR in rotazione → NON connesso. Serve scansione (rimuovi prima i Dispositivi Collegati sul telefono)."
-  echo "   URL QR: https://score.get-scala.com/sara-qr"
+  echo "   URL QR: # QR URL: check your deployment docs"
   exit 2
 fi
 if [ "$LAST" != "connection OPEN" ]; then
