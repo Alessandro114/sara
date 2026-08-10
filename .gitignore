@@ -11,3 +11,7 @@ qr_code.txt
 *.log
 dist/
 vendor-chrome/
+.wwebjs_cache/
+.crash_history.json
+.reconnect_state.json
+.session_fingerprint.json
