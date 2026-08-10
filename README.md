@@ -197,3 +197,22 @@ Built by [Alessandro Binda](https://www.linkedin.com/in/alessandrobinda/), a GM 
 If SARA helps your business, please consider giving it a star — it helps other businesses discover it too.
 
 </div>
+
+
+---
+
+## Ecosystem
+
+Part of the **S.C.A.L.A.** open-source ecosystem:
+
+| Project | What it does |
+|---------|-------------|
+| [SARA](https://github.com/Alessandro114/sara) | WhatsApp AI agent with 20 industry-specific brains |
+| [LandIQ](https://github.com/Alessandro114/landiq) | Autonomous real estate feasibility agent |
+| [scala-sites](https://github.com/Alessandro114/scala-sites) | 100 vertical website templates (Next.js, MIT) |
+| [scala-agent-definitions](https://github.com/Alessandro114/scala-agent-definitions) | 79 AI tool definitions for 20 verticals |
+| [scala-mcp-server](https://github.com/Alessandro114/scala-mcp-server) | MCP server for Claude/ChatGPT — 250M+ companies |
+| [Score SDKs](https://github.com/Alessandro114/scala-score-js) | Company data — [JS](https://npmjs.com/package/scala-score) · [Python](https://pypi.org/project/scala-score) · [Go](https://github.com/Alessandro114/company-lookup-go) · [Rust](https://github.com/Alessandro114/score-rust) · [Deno](https://github.com/Alessandro114/scala-score-deno) |
+| [enrich-companies](https://github.com/Alessandro114/enrich-companies) | CSV enrichment CLI — [npm](https://npmjs.com/package/enrich-companies) · [pip](https://pypi.org/project/enrich-companies) |
+| [n8n node](https://github.com/Alessandro114/n8n-nodes-scala) | n8n community node for company data |
+
