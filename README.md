@@ -12,7 +12,7 @@
 
 [Documentation](#configuration) · [Cloud Version](https://get-scala.com) · [Contributing](CONTRIBUTING.md)
 
-![SARA Demo](assets/demo.png)
+![SARA Demo](assets/demo.gif)
 
 </div>
 
@@ -194,7 +194,9 @@ Built by [Alessandro Binda](https://www.linkedin.com/in/alessandrobinda/), a GM 
 
 <div align="center">
 
-If SARA helps your business, please consider giving it a star — it helps other businesses discover it too.
+**If SARA saves you time, [give it a star](https://github.com/Alessandro114/sara)**. It helps other developers discover it.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Alessandro114/sara&type=Date)](https://star-history.com/#Alessandro114/sara&Date)
 
 </div>
 
