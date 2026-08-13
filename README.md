@@ -148,7 +148,7 @@ Key environment variables (see `.env.example` for the full list):
 
 ## Self-hosted vs Cloud
 
-| Feature | Self-hosted (free) | Cloud ([sara.get-scala.com](https://sara.get-scala.com)) |
+| Feature | Self-hosted (free) | Cloud ([get-scala.com](https://get-scala.com)) |
 |---|---|---|
 | AI chat engine | Yes | Yes |
 | 20 industry verticals | Yes | Yes |
