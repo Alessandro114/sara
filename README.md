@@ -217,4 +217,5 @@ Part of the **S.C.A.L.A.** open-source ecosystem:
 | [Score SDKs](https://github.com/Alessandro114/scala-score-js) | Company data — [JS](https://npmjs.com/package/scala-score) · [Python](https://pypi.org/project/scala-score) · [Go](https://github.com/Alessandro114/company-lookup-go) · [Rust](https://github.com/Alessandro114/score-rust) · [Deno](https://github.com/Alessandro114/scala-score-deno) |
 | [enrich-companies](https://github.com/Alessandro114/enrich-companies) | CSV enrichment CLI — [npm](https://npmjs.com/package/enrich-companies) · [pip](https://pypi.org/project/enrich-companies) |
 | [n8n node](https://github.com/Alessandro114/n8n-nodes-scala) | n8n community node for company data |
+| [awesome-whatsapp-ai](https://github.com/Alessandro114/awesome-whatsapp-ai) | Curated list of WhatsApp AI tools & frameworks |
 
