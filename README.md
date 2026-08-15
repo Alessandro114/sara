@@ -196,10 +196,7 @@ Built by [Alessandro Binda](https://www.linkedin.com/in/alessandrobinda/), a GM 
 
 **If SARA saves you time, [give it a star](https://github.com/Alessandro114/sara)**. It helps other developers discover it.
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Alessandro114/sara&type=Date)](https://star-history.com/#Alessandro114/sara&Date)
-
 </div>
-
 
 ---
 
