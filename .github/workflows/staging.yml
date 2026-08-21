@@ -1,0 +1,55 @@
+name: Staging
+
+# A disposable environment, rebuilt from nothing on every run and destroyed
+# with the job. The database is a service container: it is created empty,
+# gets the schema from initDB() plus the migrations, and is thrown away when
+# the runner is torn down. Nothing here can reach, read or write production —
+# that is the entire point.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  staging:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: staging
+          POSTGRES_PASSWORD: staging
+          POSTGRES_DB: sara_staging
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://staging:staging@127.0.0.1:5432/sara_staging
+      SARA_API_PORT: '3006'
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke test against the throwaway database
+        run: node scripts/staging-smoke.mjs
+        timeout-minutes: 5
