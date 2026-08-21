@@ -5,8 +5,13 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
+// No hardcoded fallback on purpose: an unset DATABASE_URL used to silently
+// connect to a local database, which surfaces much later as confusing
+// empty-result bugs. The entrypoint (index.ts) checks it at startup — the
+// check cannot live here, because importing this module must stay cheap
+// enough for the unit tests that pull it in transitively.
 export const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/scala_bot',
+    connectionString: process.env.DATABASE_URL,
 });
 
 // A Pool 'error' event with no listener throws → uncaughtException → process exit.

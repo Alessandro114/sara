@@ -46,6 +46,20 @@ import { startDreamScheduler } from './lib/dream-cycle.js';
 import { ensureFactsColumn, digestAllPending } from './lib/fact-predigest.js';
 import { redactPhone } from './lib/phone-utils.js';
 
+// ─── Required configuration ───
+// Checked here rather than in config.ts: ESM evaluates every import before
+// any statement below, so this still runs before the bot opens a connection,
+// while keeping config.ts importable from unit tests.
+for (const key of ['DATABASE_URL'] as const) {
+    if (!process.env[key]) {
+        console.error(
+            `[config] ${key} is not set. Copy .env.example to .env and fill it in — ` +
+            `for the docker-compose stack the value is already in that file.`
+        );
+        process.exit(1);
+    }
+}
+
 // ─── Per-user rate limiting (max 5 msgs per 30s) ───
 const rateLimitMap = new Map<string, number[]>();
 function isRateLimited(phone: string): boolean {

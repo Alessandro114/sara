@@ -6,6 +6,7 @@
 import { pool } from '../config.js';
 import { chatChain, type ChatMsg } from './ai-providers.js';
 import { redactPhone } from './phone-utils.js';
+import { detectSentiment, detectRole, STYLE_TECHNICAL, STYLE_FORMAL } from './text-patterns.js';
 
 // ─── Types ───
 
@@ -577,19 +578,13 @@ async function extractProfileInfo(message: string, aiResponse: string): Promise<
 
     const lower = message.toLowerCase();
 
-    // Sentiment detection (simple)
-    if (/\b(grazie|perfetto|ottimo|fantastico|great|thanks|excellent|amazing|bene|bravo|stupendo|wow)\b/i.test(lower)) {
-        result.sentiment = 'positive';
-    } else if (/\b(problema|difficolt|non funzion|frustrat|deluso|bad|terrible|issue|bug|lento|costoso|troppo caro|delusione|schifo)\b/i.test(lower)) {
-        result.sentiment = 'negative';
-    } else {
-        result.sentiment = 'neutral';
-    }
+    // Sentiment detection (simple) — patterns live in lib/text-patterns.ts
+    result.sentiment = detectSentiment(lower);
 
     // Communication style detection
-    if (/\b(kpi|roi|cac|ltv|api|sdk|saas|b2b|crm|erp|funnel|churn|retention)\b/i.test(lower)) {
+    if (STYLE_TECHNICAL.test(lower)) {
         result.communication_style = 'technical';
-    } else if (/\b(egregio|gentile|cordiali saluti|distinti saluti|pregiat|spettabile)\b/i.test(lower)) {
+    } else if (STYLE_FORMAL.test(lower)) {
         result.communication_style = 'formal';
     }
 
@@ -613,10 +608,8 @@ async function extractProfileInfo(message: string, aiResponse: string): Promise<
     }
 
     // Role detection
-    if (/\b(ceo|founder|titolare|proprietario|owner|direttore|manager|responsabile|partner|socio|cto|cfo|coo|amministratore delegato|libero professionista|freelance)\b/i.test(lower)) {
-        const roleMatch = lower.match(/\b(ceo|founder|titolare|proprietario|owner|direttore|manager|responsabile|partner|socio|cto|cfo|coo|amministratore delegato|libero professionista|freelance)\b/i);
-        if (roleMatch) result.role = roleMatch[1];
-    }
+    const role = detectRole(lower);
+    if (role) result.role = role;
 
     // Name detection (regex - "mi chiamo X", "sono X", "I'm X")
     const namePatterns = [

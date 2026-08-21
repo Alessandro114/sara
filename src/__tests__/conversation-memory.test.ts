@@ -1,148 +1,92 @@
 // ═══════════════════════════════════════════════════
-// Tests for SARA Conversation Memory System
+// Tests for the text-classification patterns behind conversation memory —
+// vanilla node:assert, same runner as every other test in this folder.
+// Run: npx tsx src/__tests__/conversation-memory.test.ts
+//
+// These assert against the patterns the bot actually uses (imported from
+// lib/text-patterns.ts). The previous version of this file re-declared its
+// own copies of the regexes and asserted on those, so it stayed green while
+// the real ones drifted — it was missing bravo|stupendo|wow, among others.
 // ═══════════════════════════════════════════════════
 
-import { describe, it, expect } from 'vitest';
+import assert from 'node:assert/strict';
+import {
+    SENTIMENT_POSITIVE,
+    SENTIMENT_NEGATIVE,
+    STYLE_TECHNICAL,
+    STYLE_FORMAL,
+    ROLE_KEYWORDS,
+    RESUME_COMMAND,
+    detectSentiment,
+    detectRole,
+} from '../lib/text-patterns.js';
 
-// Test the memory module types and logic (unit-level)
+function testPositiveSentiment(): void {
+    for (const msg of ['Grazie mille!', 'Perfetto, esattamente quello che cercavo', 'wow, stupendo', 'Thanks, excellent']) {
+        assert.equal(detectSentiment(msg), 'positive', `expected positive for: ${msg}`);
+    }
+    assert.equal(SENTIMENT_POSITIVE.test('Non mi piace'), false);
+    console.log('✅ testPositiveSentiment: 4 positive messages classified');
+}
 
-describe('ConversationMemory — Types', () => {
-    it('ClientProfile interface has required fields', () => {
-        const profile = {
-            phone: '+393331234567',
-            name: 'Mario Rossi',
-            company: 'Test SRL',
-            sector: 'immobiliare',
-            role: 'CEO',
-            interests: ['crm', 'automazione'],
-            pain_points: ['troppo tempo', 'manuale'],
-            budget_range: '5K',
-            decision_timeline: '2 mesi',
-            communication_style: 'formal' as const,
-            sentiment_history: [{ date: '2026-04-15', sentiment: 'positive' as const }],
-            key_quotes: ['Vorrei automatizzare tutto'],
-            total_interactions: 15,
-            last_interaction: '2026-04-15',
-        };
-        expect(profile.phone).toBe('+393331234567');
-        expect(profile.interests).toHaveLength(2);
-        expect(profile.sentiment_history[0].sentiment).toBe('positive');
-    });
+function testNegativeSentiment(): void {
+    for (const msg of ['Ho un problema con il CRM', 'This is a terrible experience', 'There is a bug in the system', 'troppo caro']) {
+        assert.equal(detectSentiment(msg), 'negative', `expected negative for: ${msg}`);
+    }
+    // "bene" is a positive keyword — must not be dragged into negative.
+    assert.equal(SENTIMENT_NEGATIVE.test('Tutto bene'), false);
+    console.log('✅ testNegativeSentiment: 4 negative messages classified');
+}
 
-    it('AgentProfile interface has required fields', () => {
-        const agent = {
-            id: 1,
-            user_id: 'uuid-123',
-            agent_name: 'Marco Rossi',
-            greeting_style: 'Ciao! Sono Marco',
-            communication_tone: 'amichevole',
-            typical_phrases: ['Non si preoccupi', 'Ci pensiamo noi'],
-            expertise_areas: ['immobiliare', 'residenziale'],
-            languages: ['it', 'en'],
-            response_length: 'medium',
-            emoji_usage: 'minimal',
-            signature: 'Marco - HomePanda Milano',
-            active: true,
-        };
-        expect(agent.agent_name).toBe('Marco Rossi');
-        expect(agent.typical_phrases).toHaveLength(2);
-        expect(agent.languages).toContain('en');
-    });
-});
+function testNeutralAndPrecedence(): void {
+    assert.equal(detectSentiment('Vorrei sapere gli orari'), 'neutral');
+    // Documented precedence: a message carrying both reads as positive.
+    assert.equal(detectSentiment('Grazie, ma ho un problema'), 'positive');
+    console.log('✅ testNeutralAndPrecedence: neutral + positive-wins precedence');
+}
 
-describe('ConversationMemory — AI Mode Validation', () => {
-    it('valid modes are auto, ai_only, human_only, hybrid', () => {
-        const validModes = ['auto', 'ai_only', 'human_only', 'hybrid'];
-        expect(validModes).toContain('auto');
-        expect(validModes).toContain('human_only');
-        expect(validModes).toContain('hybrid');
-        expect(validModes).not.toContain('invalid');
-    });
-});
+function testCommunicationStyle(): void {
+    assert.equal(STYLE_TECHNICAL.test('Qual e il ROI atteso?'), true);
+    assert.equal(STYLE_TECHNICAL.test('Avete delle API?'), true);
+    assert.equal(STYLE_TECHNICAL.test('come funziona il churn'), true);
+    assert.equal(STYLE_TECHNICAL.test('Ciao come stai'), false);
+    assert.equal(STYLE_FORMAL.test('Egregio Dottore, cordiali saluti'), true);
+    assert.equal(STYLE_FORMAL.test('ciao raga'), false);
+    console.log('✅ testCommunicationStyle: technical + formal detection');
+}
 
-describe('ConversationMemory — Profile Extraction Logic', () => {
-    it('detects positive sentiment', () => {
-        const positiveWords = /\b(grazie|perfetto|ottimo|fantastico|great|thanks|excellent|amazing|bene)\b/i;
-        expect(positiveWords.test('Grazie mille!')).toBe(true);
-        expect(positiveWords.test('Perfetto, esattamente quello che cercavo')).toBe(true);
-        expect(positiveWords.test('Non mi piace')).toBe(false);
-    });
+function testRoleDetection(): void {
+    assert.equal(detectRole('Sono il titolare'), 'titolare');
+    assert.equal(detectRole('Lavoro come manager'), 'manager');
+    assert.equal(detectRole('sono il CTO'), 'cto');
+    assert.equal(detectRole('Sono un cliente'), null);
+    assert.equal(ROLE_KEYWORDS.test('Sono un cliente'), false);
+    console.log('✅ testRoleDetection: 3 roles extracted, non-role rejected');
+}
 
-    it('detects negative sentiment', () => {
-        // Matches from conversation-memory.ts extractProfileInfo
-        const negativeWords = /\b(problema|difficolt|non funzion|frustrat|deluso|bad|terrible|issue|bug)\b/i;
-        expect(negativeWords.test('Ho un problema con il CRM')).toBe(true);
-        expect(negativeWords.test('This is a terrible experience')).toBe(true);
-        expect(negativeWords.test('There is a bug in the system')).toBe(true);
-        expect(negativeWords.test('Tutto bene')).toBe(false);
-    });
+function testResumeCommand(): void {
+    assert.equal(RESUME_COMMAND.test('SARA riprendi'), true);
+    assert.equal(RESUME_COMMAND.test('sara resume'), true);
+    assert.equal(RESUME_COMMAND.test('sara auto'), true);
+    // Must anchor at the start — a mention mid-sentence is not a command.
+    assert.equal(RESUME_COMMAND.test('ciao sara'), false);
+    console.log('✅ testResumeCommand: 3 commands matched, mention rejected');
+}
 
-    it('detects technical communication style', () => {
-        const techWords = /\b(kpi|roi|cac|ltv|api|sdk|saas|b2b|crm|erp)\b/i;
-        expect(techWords.test('Qual e il ROI atteso?')).toBe(true);
-        expect(techWords.test('Avete delle API?')).toBe(true);
-        expect(techWords.test('Ciao come stai')).toBe(false);
-    });
+function testNoGlobalFlag(): void {
+    // A /g flag would make .test() stateful and every caller order-dependent.
+    for (const [name, re] of Object.entries({ SENTIMENT_POSITIVE, SENTIMENT_NEGATIVE, STYLE_TECHNICAL, STYLE_FORMAL, ROLE_KEYWORDS, RESUME_COMMAND })) {
+        assert.equal(re.global, false, `${name} must not carry the /g flag`);
+    }
+    console.log('✅ testNoGlobalFlag: 6 patterns are stateless');
+}
 
-    it('detects role keywords', () => {
-        const rolePattern = /\b(ceo|founder|titolare|proprietario|owner|direttore|manager|responsabile|partner|socio)\b/i;
-        expect(rolePattern.test('Sono il titolare')).toBe(true);
-        expect(rolePattern.test('Lavoro come manager')).toBe(true);
-        expect(rolePattern.test('Sono un cliente')).toBe(false);
-    });
-});
+testPositiveSentiment();
+testNegativeSentiment();
+testNeutralAndPrecedence();
+testCommunicationStyle();
+testRoleDetection();
+testResumeCommand();
+testNoGlobalFlag();
 
-describe('ConversationMemory — Outreach Rules', () => {
-    it('outreach rules enforce safe limits', () => {
-        const rules = {
-            max_messages_per_hour: 20,
-            max_messages_per_day: 100,
-            min_interval_between_messages: 30_000,
-            batch_size: 5,
-            batch_cooldown: 5 * 60_000,
-        };
-        expect(rules.max_messages_per_hour).toBeLessThanOrEqual(20);
-        expect(rules.max_messages_per_day).toBeLessThanOrEqual(100);
-        expect(rules.min_interval_between_messages).toBeGreaterThanOrEqual(30_000);
-        expect(rules.batch_cooldown).toBeGreaterThanOrEqual(300_000);
-    });
-
-    it('batch scheduling spreads messages over time', () => {
-        const batchSize = 5;
-        const batchCooldown = 5 * 60_000;
-        const interval = 30_000;
-        const contacts = 20;
-
-        let totalTime = 0;
-        for (let i = 0; i < contacts; i++) {
-            const offset = i * interval;
-            const batchOffset = Math.floor(i / batchSize) * batchCooldown;
-            totalTime = offset + batchOffset;
-        }
-        // 20 contacts: 19*30s + 3*300s = 570s + 900s = 1470s = ~24.5 minutes
-        expect(totalTime).toBeGreaterThan(10 * 60_000); // should take >10 min
-    });
-});
-
-describe('ProactiveAlerts — Alert Types', () => {
-    it('all alert types are valid', () => {
-        const validTypes = ['inactive_client', 'negative_sentiment', 'pending_action', 'slow_response', 'timeline_approaching'];
-        expect(validTypes).toHaveLength(5);
-    });
-
-    it('priority values are correct', () => {
-        const validPriorities = ['low', 'medium', 'high', 'urgent'];
-        expect(validPriorities).toContain('urgent');
-        expect(validPriorities).toContain('low');
-    });
-});
-
-describe('SARA Resume Command', () => {
-    it('detects resume commands', () => {
-        const resumePattern = /^sara\s+(riprendi|resume|takeover|auto)/i;
-        expect(resumePattern.test('SARA riprendi')).toBe(true);
-        expect(resumePattern.test('sara resume')).toBe(true);
-        expect(resumePattern.test('sara auto')).toBe(true);
-        expect(resumePattern.test('ciao sara')).toBe(false);
-    });
-});
+console.log('\n🎉 conversation-memory pattern tests passed');
