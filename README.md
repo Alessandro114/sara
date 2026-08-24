@@ -8,7 +8,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Stars](https://img.shields.io/github/stars/Alessandro114/sara?style=social)](https://github.com/Alessandro114/sara)
 
-**SARA is a self-hostable AI agent for WhatsApp that understands your industry. 13 industry brains included in this repo; 20 verticals are defined in the open [`@scala-ai/agent-definitions`](https://github.com/Alessandro114/scala-agent-definitions) schema (Apache-2.0), and you can write your own. 87 tool definitions. Function calling. RAG. Multi-language.**
+**SARA is a self-hostable AI agent for WhatsApp that understands your industry. 13 industry brains included in this repo; 20 verticals are defined in the open [`scala-agent-definitions`](https://github.com/Alessandro114/scala-agent-definitions) schema (Apache-2.0), and you can write your own. 83 tool definitions. Function calling. RAG. Multi-language.**
 
 [Documentation](#configuration) · [Cloud Version](https://get-scala.com) · [Contributing](CONTRIBUTING.md)
 
@@ -33,7 +33,7 @@
 
 - Multi-provider LLM chain (Groq → Cerebras → SambaNova → Mistral) with automatic failover — zero downtime when one provider is rate-limited
 - RAG retrieval: PostgreSQL + pgvector (1024d embeddings) + BM25 keyword fallback for hybrid search
-- Function calling with 87 tool definitions across 20 industry verticals — agents can actually *do* things, not just respond
+- Function calling with 83 tool definitions across 20 industry verticals — agents can actually *do* things, not just respond
 - PII anonymization before every external LLM call — names, phones, emails are masked at the boundary
 - Prompt injection guardrails: 40+ patterns, 4 languages, evaluated before every turn
 - Hallucination detection + confidence scoring on AI responses
@@ -211,7 +211,7 @@ Part of the **S.C.A.L.A.** open-source ecosystem:
 | [SARA](https://github.com/Alessandro114/sara) | WhatsApp AI agent — 20 verticals defined, 13 brains included |
 | [LandIQ](https://github.com/Alessandro114/landiq) | Autonomous real estate feasibility agent |
 | [scala-sites](https://github.com/Alessandro114/scala-sites) | 100 vertical website templates (Next.js, MIT) |
-| [scala-agent-definitions](https://github.com/Alessandro114/scala-agent-definitions) | 87 AI tool definitions for 20 verticals |
+| [scala-agent-definitions](https://github.com/Alessandro114/scala-agent-definitions) | 80 AI tool definitions for 20 verticals |
 | [scala-mcp-server](https://github.com/Alessandro114/scala-mcp-server) | MCP server for Claude/ChatGPT — 250M+ companies |
 | [Score SDKs](https://github.com/Alessandro114/scala-score-js) | Company data — [JS](https://npmjs.com/package/scala-score) · [Python](https://pypi.org/project/scala-score) · [Go](https://github.com/Alessandro114/company-lookup-go) · [Rust](https://github.com/Alessandro114/score-rust) · [Deno](https://github.com/Alessandro114/scala-score-deno) |
 | [enrich-companies](https://github.com/Alessandro114/enrich-companies) | CSV enrichment CLI — [npm](https://npmjs.com/package/enrich-companies) · [pip](https://pypi.org/project/enrich-companies) |
