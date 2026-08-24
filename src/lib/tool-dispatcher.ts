@@ -118,21 +118,42 @@ export function saraToolsToOpenAI(sector: string): ToolDef[] {
     }));
 }
 
+/**
+ * Formatta una data come YYYY-MM-DD nel fuso LOCALE.
+ *
+ * Prima si usava `toISOString().slice(0, 10)`, che converte in UTC. Su una
+ * macchina a fuso positivo, fra mezzanotte e l'offset, "oggi" restituiva IERI
+ * e "domani" restituiva OGGI: ogni data gestita dall'agente slittava di un
+ * giorno per un paio d'ore ogni notte. Un tavolo prenotato all'una per domani
+ * finiva sul giorno sbagliato, senza nessun errore.
+ *
+ * In produzione il server e su UTC e il difetto non si manifestava, ma questo
+ * repository e pubblico e auto-ospitabile: chi lo installa in Italia lo prende
+ * in pieno. E far dipendere la correttezza dal fuso della macchina, senza
+ * scriverlo da nessuna parte, e una trappola comunque.
+ */
+function dataLocale(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 // ─── Date normalizer (LLM often returns "domani", "today", etc.) ───
-function normalizeDate(raw: string): string {
+// Esportata per poterla verificare: converte le date che il modello scrive in
+// linguaggio naturale, ed e il punto in cui un errore prenota il giorno
+// sbagliato senza che nessuno se ne accorga.
+export function normalizeDate(raw: string): string {
     if (!raw) return raw;
     const lower = raw.toLowerCase().trim();
     const now = new Date();
     if (lower === 'oggi' || lower === 'today' || lower === 'hoy' || lower === 'hoje') {
-        return now.toISOString().slice(0, 10);
+        return dataLocale(now);
     }
     if (lower === 'domani' || lower === 'tomorrow' || lower === 'manana' || lower === 'amanha') {
         now.setDate(now.getDate() + 1);
-        return now.toISOString().slice(0, 10);
+        return dataLocale(now);
     }
     if (lower === 'dopodomani' || lower === 'day after tomorrow' || lower === 'pasado manana') {
         now.setDate(now.getDate() + 2);
-        return now.toISOString().slice(0, 10);
+        return dataLocale(now);
     }
     // Day names → next occurrence
     const days: Record<string, number> = {
@@ -146,13 +167,13 @@ function normalizeDate(raw: string): string {
         let diff = dayNum - current;
         if (diff <= 0) diff += 7; // next week if today or past
         now.setDate(now.getDate() + diff);
-        return now.toISOString().slice(0, 10);
+        return dataLocale(now);
     }
     // If already YYYY-MM-DD, return as-is
     if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
     // Try to parse other formats
     const parsed = new Date(raw);
-    if (!isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+    if (!isNaN(parsed.getTime())) return dataLocale(parsed);
     return raw; // fallback — let DB handle or fail gracefully
 }
 
