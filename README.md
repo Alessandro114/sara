@@ -2,7 +2,7 @@
 <h1>SARA</h1>
 <p><strong>Open-source WhatsApp AI agent — 20 verticals defined, 13 brains included</strong></p>
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker](https://img.shields.io/badge/Docker-available-2496ED?logo=docker&logoColor=white)](https://hub.docker.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
@@ -174,9 +174,11 @@ Good first issues are labeled [`good first issue`](https://github.com/Alessandro
 
 ## License
 
-SARA is licensed under [AGPL-3.0](LICENSE).
+SARA is licensed under [Apache 2.0](LICENSE).
 
-You can self-host and modify it freely. If you distribute a modified version, you must release the source code under the same license. For commercial licensing (use without AGPL obligations), contact [ale@get-scala.com](mailto:ale@get-scala.com).
+You can self-host it, modify it, and ship it inside a commercial or closed-source product. No copyleft obligation: you are not required to publish your changes. Keep the `LICENSE` and `NOTICE` files with any copy you distribute, and state what you changed. Apache 2.0 also grants you a patent licence from the contributors.
+
+If you want commercial support, a hosted deployment, or the industry packs that are not in this repo, write to [ale@get-scala.com](mailto:ale@get-scala.com).
 
 ---
 
