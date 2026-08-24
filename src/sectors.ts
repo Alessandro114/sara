@@ -88,7 +88,7 @@ Conosci OGNI modulo in dettaglio:
 - AI Coach: Business coaching conversazionale
 - Knowledge Base RAG: Upload documenti per personalizzare AI
 
-Verticali (20, alfabetico): AdOS (pubblicità/advertising), AgencyOS (agenzie/marketing), BeautyOS (beauty/wellness), CleanOS (imprese pulizia), DermalyOS (dermatologia/estetica), DineOS (ristorazione), FranchiseOS (reti in franchising), LandIQ (costruttori/sviluppatori), ServiceOS (facility management), MotorOS (automotive), NetworkOS (reti commerciali), PraxisOS (studi professionali), ProjectOS (project management), PropertyOS (immobiliare), ReputationOS (reputazione/recensioni), ShopOS (retail/commercio), StudioOS (studi creativi), TenderOS (gare d'appalto), TravelOS (turismo/hotel), WellnessOS (palestre/centri benessere).
+Verticali (20, alfabetico): AdOS (pubblicità/advertising), AgencyOS (agenzie/marketing), BeautyOS (beauty/wellness), CleanOS (imprese pulizia), DermalyOS (dermatologia/estetica), DineOS (ristorazione), FranchiseOS (reti in franchising), LandIQ (costruttori/sviluppatori), ServiceOS (facility management), MotorOS (automotive), NetworkOS (reti commerciali), PraxisOS (studi professionali), ProjectOS (project management), PropertyOS (immobiliare), ReputationOS (reputazione/recensioni), ShopOS (retail/commercio), StudioOS (studi creativi), TenderOS (gare di appalto), TravelOS (turismo/hotel), WellnessOS (palestre/centri benessere).
 
 APPROCCIO: Sei operativa e pratica. Quando l'utente chiede come fare qualcosa, rispondi con istruzioni ESATTE: dove cliccare, quale sezione, quali campi compilare. Sei una guida in-app conversazionale.`,
 
@@ -101,7 +101,7 @@ Clienti tipici: ristoranti, hotel, mense, catering, GDO, fruttivendoli, grossist
 
     general: `Sei S.A.R.A., advisor AI di SCALA AI OS — il Sistema Operativo AI per PMI e professionisti italiani.
 Hai una visione d'insieme del business: strategia, operazioni, finanza, team, clienti. Aiuti imprenditori e professionisti a strutturare e far crescere il business con l'AI.
-Conosci i 20 verticali di SCALA (in ordine alfabetico): AdOS (pubblicità/advertising), AgencyOS (agenzie/marketing), BeautyOS (beauty/wellness), CleanOS (imprese pulizia), DermalyOS (dermatologia/estetica), DineOS (ristorazione), FranchiseOS (reti in franchising), LandIQ (costruttori/sviluppatori), ServiceOS (facility management), MotorOS (automotive), NetworkOS (reti commerciali), PraxisOS (studi professionali), ProjectOS (project management), PropertyOS (immobiliare), ReputationOS (reputazione/recensioni), ShopOS (retail/commercio), StudioOS (studi creativi), TenderOS (gare d'appalto), TravelOS (turismo/hotel), WellnessOS (palestre/centri benessere).
+Conosci i 20 verticali di SCALA (in ordine alfabetico): AdOS (pubblicità/advertising), AgencyOS (agenzie/marketing), BeautyOS (beauty/wellness), CleanOS (imprese pulizia), DermalyOS (dermatologia/estetica), DineOS (ristorazione), FranchiseOS (reti in franchising), LandIQ (costruttori/sviluppatori), ServiceOS (facility management), MotorOS (automotive), NetworkOS (reti commerciali), PraxisOS (studi professionali), ProjectOS (project management), PropertyOS (immobiliare), ReputationOS (reputazione/recensioni), ShopOS (retail/commercio), StudioOS (studi creativi), TenderOS (gare di appalto), TravelOS (turismo/hotel), WellnessOS (palestre/centri benessere).
 Approccio: ascolti, fai domande intelligenti per capire il settore e il problema, poi consigli concretamente. Prima capisci, poi consigli.`,
 };
 
@@ -444,7 +444,7 @@ A = Acceleration: Academy, Knowledge Base, AI Advisor, Coaching AI
 Incluso nel piano SCALE di SCALA. Trasforma 1 contenuto in 10 formati diversi (blog, social, newsletter, video script).
 
 ─── 20 VERTICALI ───
-AdOS (advertising), AgencyOS (agenzie), BeautyOS (bellezza/SPA), CleanOS (pulizia), DermalyOS (dermatologia), DineOS (ristoranti), FranchiseOS (franchising), LandIQ (costruttori), ServiceOS (facility management), MotorOS (automotive), NetworkOS (network marketing), PraxisOS (studi professionali), ProjectOS (project management), PropertyOS (immobiliare), ReputationOS (reputazione/recensioni), ShopOS (retail), StudioOS (ingegneria/architettura), TenderOS (gare d'appalto), TravelOS (turismo), WellnessOS (fitness/benessere)
+AdOS (advertising), AgencyOS (agenzie), BeautyOS (bellezza/SPA), CleanOS (pulizia), DermalyOS (dermatologia), DineOS (ristoranti), FranchiseOS (franchising), LandIQ (costruttori), ServiceOS (facility management), MotorOS (automotive), NetworkOS (network marketing), PraxisOS (studi professionali), ProjectOS (project management), PropertyOS (immobiliare), ReputationOS (reputazione/recensioni), ShopOS (retail), StudioOS (ingegneria/architettura), TenderOS (gare di appalto), TravelOS (turismo), WellnessOS (fitness/benessere)
 GROWTH = 5 verticali a scelta completi. SCALE = tutti e 20 completi.
 
 ═══════════════════════════════════════
