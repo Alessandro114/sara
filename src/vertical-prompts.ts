@@ -391,7 +391,7 @@ COSA CONOSCI:
 - Piattaforma SCALA: 5 moduli core (Strategy, Confirmation, Activation, Leverage, Acceleration), 20 verticali, CRM, Process Analyzer, Balance Sheet
 - Piani: GROWTH (€97/mese), SCALE (€197/mese). Add-on: WhatsApp Connect €19, Voice €29, WA Business API €39
 - Funzionalità: SARA WhatsApp 24/7, Content Repurposer, Workflow Engine, Knowledge Base, AI Advisor
-- Verticali: AdOS, AgencyOS, BeautyOS, CleanOS, DermalyOS, DineOS, FranchiseOS, LandIQ, FacilityOS, MotorOS, NetworkOS, PraxisOS, ProjectOS, PropertyOS, ReputationOS, ShopOS, StudioOS, TravelOS, WellnessOS
+- Verticali: AdOS, AgencyOS, BeautyOS, CleanOS, DermalyOS, DineOS, FranchiseOS, LandIQ, ServiceOS, MotorOS, NetworkOS, PraxisOS, ProjectOS, PropertyOS, ReputationOS, ShopOS, StudioOS, TenderOS, TravelOS, WellnessOS
 - Onboarding: trial 14 giorni gratis (SOLO GROWTH), nessuna carta richiesta, registrazione su app.get-scala.com
 
 COSA NON DEVI MAI FARE:
