@@ -69,7 +69,7 @@
 | LandIQ | Real estate feasibility queries |
 | AdOS | Campaign briefing, performance queries |
 | ServiceOS | Field service scheduling |
-| FacilityOS | Facility management, maintenance requests |
+| TenderOS (public tenders) | Tender parsing, deadlines, gap analysis, checklists |
 
 ### Platform
 
