@@ -1,6 +1,6 @@
 <div align="center">
 <h1>SARA</h1>
-<p><strong>Open-source WhatsApp AI agent with 20 industry-specific brains</strong></p>
+<p><strong>Open-source WhatsApp AI agent — 20 verticals defined, 13 brains included</strong></p>
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Docker](https://img.shields.io/badge/Docker-available-2496ED?logo=docker&logoColor=white)](https://hub.docker.com)
@@ -8,7 +8,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Stars](https://img.shields.io/github/stars/Alessandro114/sara?style=social)](https://github.com/Alessandro114/sara)
 
-**SARA is a self-hostable AI agent for WhatsApp that understands your industry. 20 verticals. 30+ tools. Function calling. RAG. Multi-language. Works out of the box.**
+**SARA is a self-hostable AI agent for WhatsApp that understands your industry. 13 industry brains included in this repo; 20 verticals are defined in the open [`@scala-ai/agent-definitions`](https://github.com/Alessandro114/scala-agent-definitions) schema (Apache-2.0), and you can write your own. 87 tool definitions. Function calling. RAG. Multi-language.**
 
 [Documentation](#configuration) · [Cloud Version](https://get-scala.com) · [Contributing](CONTRIBUTING.md)
 
@@ -22,7 +22,7 @@
 
 - **vs Generic chatbots (Tidio, Landbot):** SARA knows your industry. A restaurant bot books tables and checks allergens. A clinic bot schedules patient appointments. Generic bots just answer FAQs.
 - **vs Enterprise platforms (Salesforce, ServiceNow):** Self-host for free. No vendor lock-in. No six-figure contracts. Full source access.
-- **vs Building from scratch:** 20 verticals are already wired — knowledge bases, tools, prompts, fallbacks. You add your data, not your architecture.
+- **vs Building from scratch:** the verticals are already wired — knowledge bases, tools, prompts, fallbacks. 13 brains ship in this repo, 20 are defined in the open schema. You add your data, not your architecture.
 - **vs Other open source (Chatwoot, Typebot):** SARA is an AI agent with function calling, RAG retrieval, PII anonymization, and autonomy levels — not just a chat widget with canned replies.
 
 ---
@@ -33,7 +33,7 @@
 
 - Multi-provider LLM chain (Groq → Cerebras → SambaNova → Mistral) with automatic failover — zero downtime when one provider is rate-limited
 - RAG retrieval: PostgreSQL + pgvector (1024d embeddings) + BM25 keyword fallback for hybrid search
-- Function calling with 30+ tools across 20 industry verticals — agents can actually *do* things, not just respond
+- Function calling with 87 tool definitions across 20 industry verticals — agents can actually *do* things, not just respond
 - PII anonymization before every external LLM call — names, phones, emails are masked at the boundary
 - Prompt injection guardrails: 40+ patterns, 4 languages, evaluated before every turn
 - Hallucination detection + confidence scoring on AI responses
@@ -151,7 +151,7 @@ Key environment variables (see `.env.example` for the full list):
 | Feature | Self-hosted (free) | Cloud ([get-scala.com](https://get-scala.com)) |
 |---|---|---|
 | AI chat engine | Yes | Yes |
-| 20 industry verticals | Yes | Yes |
+| 20 verticals defined / 13 brains included | Yes | Yes |
 | Function calling (30+ tools) | Yes | Yes |
 | RAG engine | Yes | Yes |
 | Multi-language | Yes | Yes |
@@ -206,10 +206,10 @@ Part of the **S.C.A.L.A.** open-source ecosystem:
 
 | Project | What it does |
 |---------|-------------|
-| [SARA](https://github.com/Alessandro114/sara) | WhatsApp AI agent with 20 industry-specific brains |
+| [SARA](https://github.com/Alessandro114/sara) | WhatsApp AI agent — 20 verticals defined, 13 brains included |
 | [LandIQ](https://github.com/Alessandro114/landiq) | Autonomous real estate feasibility agent |
 | [scala-sites](https://github.com/Alessandro114/scala-sites) | 100 vertical website templates (Next.js, MIT) |
-| [scala-agent-definitions](https://github.com/Alessandro114/scala-agent-definitions) | 79 AI tool definitions for 20 verticals |
+| [scala-agent-definitions](https://github.com/Alessandro114/scala-agent-definitions) | 87 AI tool definitions for 20 verticals |
 | [scala-mcp-server](https://github.com/Alessandro114/scala-mcp-server) | MCP server for Claude/ChatGPT — 250M+ companies |
 | [Score SDKs](https://github.com/Alessandro114/scala-score-js) | Company data — [JS](https://npmjs.com/package/scala-score) · [Python](https://pypi.org/project/scala-score) · [Go](https://github.com/Alessandro114/company-lookup-go) · [Rust](https://github.com/Alessandro114/score-rust) · [Deno](https://github.com/Alessandro114/scala-score-deno) |
 | [enrich-companies](https://github.com/Alessandro114/enrich-companies) | CSV enrichment CLI — [npm](https://npmjs.com/package/enrich-companies) · [pip](https://pypi.org/project/enrich-companies) |
