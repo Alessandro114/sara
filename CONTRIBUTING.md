@@ -75,7 +75,7 @@ Be respectful, constructive, and inclusive. We're building something useful toge
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+By contributing, you agree that your contributions will be licensed under the **Apache License 2.0**.
 
 See [LICENSE](./LICENSE) for the full license text.
 
