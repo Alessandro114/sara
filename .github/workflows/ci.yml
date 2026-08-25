@@ -28,5 +28,10 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: Test
-        run: npm test
+      # La copertura si MISURA a ogni giro. Prima non si misurava affatto, e
+      # in mancanza del numero si citava il rapporto fra righe di test e righe
+      # di codice (3,8%) come se fosse copertura: la copertura vera e il 56%.
+      # Due misure diverse, e quella grezza faceva sembrare il progetto messo
+      # molto peggio di com e.
+      - name: Test e copertura
+        run: npm run test:coverage
