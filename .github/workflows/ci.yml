@@ -25,7 +25,12 @@ jobs:
     # database vero, e ensureMemorySchema() si crea le tabelle da solo.
     services:
       postgres:
-        image: postgres:15
+        # pgvector, non postgres semplice: initDB() di db.ts apre con
+        # CREATE EXTENSION vector, perche la tabella della conoscenza tiene gli
+        # embedding come vector(1024). Con postgres:15 initDB fallisce alla
+        # prima riga — ed e proprio il caso che il messaggio d'errore di db.ts
+        # spiega ("Use the pgvector/pgvector image").
+        image: pgvector/pgvector:pg15
         env:
           POSTGRES_USER: sara
           POSTGRES_PASSWORD: sara
