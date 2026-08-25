@@ -220,6 +220,30 @@ async function testPunteggioSoglie() {
     console.log('✅ testPunteggioSoglie: new → engaged (20) → qualified (50)');
 }
 
+async function testPunteggioSoglieAlBordo() {
+    // I bordi esatti, 19/20 e 49/50. Le soglie sono `>=`, e un fuori-di-uno
+    // qui sposta chi viene contattato e chi finisce nel CRM.
+    //
+    // Serve anche da rete contro il difetto appena corretto: updateLeadScore
+    // leggeva la sessione DOPO l'UPDATE e sommava il delta una seconda volta,
+    // quindi lo stadio si calcolava sul doppio e le soglie scattavano a meta.
+    // Con quel difetto in piedi, questi due test falliscono entrambi.
+    const a = '+39000' + String(Date.now() + 21).slice(-7);
+    await upsertSession(a, {});
+    await updateLeadScore(a, 19);
+    assert.equal((await getSession(a)).lead_stage, 'new', '19 punti non devono dare engaged');
+    await updateLeadScore(a, 1); // 20 esatti
+    assert.equal((await getSession(a)).lead_stage, 'engaged', '20 punti esatti devono dare engaged');
+
+    const b = '+39000' + String(Date.now() + 22).slice(-7);
+    await upsertSession(b, {});
+    await updateLeadScore(b, 49);
+    assert.equal((await getSession(b)).lead_stage, 'engaged', '49 punti non devono dare qualified');
+    await updateLeadScore(b, 1); // 50 esatti
+    assert.equal((await getSession(b)).lead_stage, 'qualified', '50 punti esatti devono dare qualified');
+    console.log('✅ testPunteggioSoglieAlBordo: 19→new, 20→engaged, 49→engaged, 50→qualified');
+}
+
 async function testPunteggioNonScendeSottoZero() {
     const tel = '+39000' + String(Date.now() + 4).slice(-7);
     await upsertSession(tel, {});
@@ -354,6 +378,7 @@ async function pulisci() {
         await testUltimiArgomentiVuoto();
         await testUltimiArgomentiTronca();
         await testPunteggioSoglie();
+        await testPunteggioSoglieAlBordo();
         await testPunteggioNonScendeSottoZero();
         await testConvertitoNonTornaIndietro();
         await testPunteggioSuSessioneAssente();
