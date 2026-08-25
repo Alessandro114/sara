@@ -249,7 +249,9 @@ export async function initDB() {
             console.error('[DB] The pgvector extension is missing. Use the pgvector/pgvector image, or install it as a superuser.');
         }
         throw err;
-        console.log('[DB] Bot will continue with existing schema');
+        // (qui sotto c'era un console.log rimasto dopo il throw: irraggiungibile,
+        //  e diceva "Bot will continue with existing schema" — cioe' esattamente
+        //  il contrario di quello che il throw fa. Rimosso.)
     }
 }
 
@@ -345,7 +347,14 @@ export async function updateLeadScore(phone: string, delta: number) {
     // Auto-update lead stage based on score
     const session = await getSession(phone);
     if (!session) return;
-    const score = (session.lead_score || 0) + delta;
+    // NIENTE "+ delta" qui: getSession gira DOPO l'UPDATE qui sopra, quindi
+    // session.lead_score contiene gia il delta. Sommarlo di nuovo faceva
+    // calcolare lo stadio sul DOPPIO del punteggio vero, e le due soglie
+    // scattavano a meta: 'engaged' a 10 punti invece di 20, 'qualified' a 25
+    // invece di 50 — con la sincronizzazione al CRM che partiva di
+    // conseguenza. Il punteggio salvato in tabella era giusto: sbagliato era
+    // solo lo stadio, che e proprio il campo su cui si decide chi contattare.
+    const score = session.lead_score || 0;
     let stage = 'new';
     if (score >= 50) stage = 'qualified';
     else if (score >= 20) stage = 'engaged';
