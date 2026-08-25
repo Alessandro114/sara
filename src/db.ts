@@ -249,7 +249,9 @@ export async function initDB() {
             console.error('[DB] The pgvector extension is missing. Use the pgvector/pgvector image, or install it as a superuser.');
         }
         throw err;
-        console.log('[DB] Bot will continue with existing schema');
+        // (qui sotto c'era un console.log rimasto dopo il throw: irraggiungibile,
+        //  e diceva "Bot will continue with existing schema" — cioe' esattamente
+        //  il contrario di quello che il throw fa. Rimosso.)
     }
 }
 
