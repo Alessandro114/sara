@@ -638,13 +638,40 @@ export function isScalaPlatformQuery(text: string): boolean {
         'inserisci', 'crea un', 'aggiungi un', 'analizza', 'genera', 'esporta',
         'carica un', 'importa', 'configura',
         // Pricing signals (P2 audit fix)
-        'prezzo', 'prezzi', 'costa', 'costano', 'quanto costa', 'quanto costano',
+        'prezzo', 'prezzi', 'quanto costa', 'quanto costano',
+        // 'costa' e 'costano' da soli NO: in italiano "costa" e anche il
+        // litorale e "costoso" un aggettivo qualsiasi. La frase intera basta,
+        // e il segnale singolo faceva scattare il listino su "un tavolo vista
+        // costa".
         'pricing', 'price', 'cost', 'how much', 'plan', 'piani',
         'precio', 'cuesta', 'plano', 'preço',
         'abbonamento', 'subscription', 'trial', 'free', 'gratuito',
     ];
 
-    return platformSignals.some(signal => lower.includes(signal));
+    // Le frasi (piu parole) si cercano come sottostringa: "come si usa" dentro
+    // una domanda piu lunga e esattamente cio che vogliamo trovare.
+    const frasi = platformSignals.filter(s => s.includes(' '));
+    if (frasi.some(f => lower.includes(f))) return true;
+
+    // Le parole singole NO: cercarle come sottostringa produceva falsi
+    // positivi seri, perche i segnali corti vivono dentro parole comuni.
+    //
+    //   "un tavolo vista costa"        -> costa
+    //   "il vino e costoso"            -> cost
+    //   "vorrei un costume da bagno"   -> cost
+    //   "sono un freelance"            -> free
+    //   "lavoro nel settore industriale" -> trial   (indus-TRIAL-e)
+    //
+    // In tutti e cinque i casi SARA iniettava il listino della piattaforma
+    // nella conversazione: un cliente che prenota la cena si sentiva
+    // rispondere sugli abbonamenti da 97 euro al mese.
+    //
+    // \p{L} e \p{N} invece di \w perche i messaggi sono in italiano, spagnolo
+    // e portoghese: con \w, "però" spezzerebbe sulla lettera accentata.
+    const parole = platformSignals.filter(s => !s.includes(' '));
+    const alternative = parole.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    const confineDiParola = new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${alternative})(?:[^\\p{L}\\p{N}]|$)`, 'u');
+    return confineDiParola.test(lower);
 }
 
 // ─── Pricing knowledge (aggiornato 2026-04-20) ───
@@ -754,15 +781,41 @@ S = Strategy, C = Confirmation (nao "Cash"), A = Activation, L = Leverage, A = A
 
 function isPricingQuery(query: string): boolean {
     const lower = query.toLowerCase();
-    const signals = [
-        'prezzo', 'prezzi', 'costa', 'costano', 'costo', 'quanto', 'piano', 'piani',
-        'pricing', 'price', 'cost', 'how much', 'plan', 'plans',
-        'precio', 'precios', 'cuesta', 'cuestan', 'plan', 'planes',
-        'preço', 'preços', 'custa', 'custam', 'plano', 'planos',
-        'abbonamento', 'subscription', 'suscripción', 'assinatura',
-        '49', '149', '298', '€',
+
+    // Frasi: si cercano come sottostringa, ed e giusto cosi.
+    const frasi = [
+        'quanto costa', 'quanto costano', 'quanto custa', 'quanto custam',
+        'how much', 'cuanto cuesta', 'cuánto cuesta', 'cuanto cuestan',
+        'piano gratuito', 'piani disponibili', 'listino prezzi',
     ];
-    return signals.some(s => lower.includes(s));
+    if (frasi.some(f => lower.includes(f))) return true;
+
+    // Parole singole, cercate con i confini di parola.
+    //
+    // Tolti rispetto a prima, e ognuno faceva danno da solo:
+    //
+    //   '49','149','298'  numeri nudi, cercati come sottostringa. Un numero di
+    //                     telefono contiene quasi sempre "49": "+39 349 12345"
+    //                     faceva iniettare il listino intero. Ed erano anche
+    //                     OBSOLETI — i prezzi veri sono 97, 197, 970, 1970.
+    //   '€'               un ristorante che scrive "il vino costa 25€" non sta
+    //                     chiedendo il listino della piattaforma.
+    //   'quanto'          "quanto tempo ci vuole", "quanto dista".
+    //   'piano'           "siamo al piano terra", "vai piano".
+    //   'costa','costano' "un tavolo vista costa".
+    //
+    // Restavano nella conversazione di CHIUNQUE: il listino della piattaforma
+    // finiva nel contesto del modello mentre un cliente prenotava la cena, e il
+    // modello veniva invitato a parlargli di abbonamenti da 97 euro.
+    const parole = [
+        'prezzo', 'prezzi', 'costo', 'costi', 'piani', 'tariffe', 'tariffa',
+        'pricing', 'price', 'prices', 'cost', 'plan', 'plans',
+        'precio', 'precios', 'cuesta', 'cuestan', 'planes',
+        'preço', 'preços', 'custa', 'custam', 'plano', 'planos',
+        'abbonamento', 'abbonamenti', 'subscription', 'suscripción', 'assinatura',
+    ];
+    const alternative = parole.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    return new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${alternative})(?:[^\\p{L}\\p{N}]|$)`, 'u').test(lower);
 }
 
 // ─── Build knowledge context for AI prompt ───
