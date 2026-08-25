@@ -14,6 +14,33 @@ jobs:
       matrix:
         node: ['20', '22']
 
+    # Un Postgres vuoto e usa-e-getta, che dura quanto il job.
+    #
+    # Serve perche il grosso del codice non coperto parla al database — db.ts
+    # era al 6,7%, persistent-memory al 27% — e non perche sia codice
+    # trascurato: in prova non c'era mai stato un database a cui parlare.
+    #
+    # L'alternativa sarebbe rattoppare il modulo `pg` con dei finti, ma quei
+    # test verificherebbero i finti. Qui gira il codice VERO contro un
+    # database vero, e ensureMemorySchema() si crea le tabelle da solo.
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: sara
+          POSTGRES_PASSWORD: sara
+          POSTGRES_DB: sara_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://sara:sara@127.0.0.1:5432/sara_test
+
     steps:
       - uses: actions/checkout@v4
 
