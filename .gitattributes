@@ -1,0 +1,14 @@
+# Gli script di shell devono avere fine riga LF SEMPRE, anche se vengono
+# modificati da Windows. Con CRLF il kernel Linux legge lo shebang come
+# `bash\r`, non trova nessun interprete con quel nome e il processo muore con
+# exit 127 — che nel log appare come "No such file or directory" riferito a
+# bash, non allo script, e manda fuori strada.
+#
+# E successo il 25/08/2026: modificando scripts/run-tests.sh da Windows la CI
+# di sara e diventata rossa senza che nessuna riga di logica fosse cambiata.
+*.sh text eol=lf
+
+# Stessa ragione per i file che Docker e la CI eseguono o leggono riga per riga.
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
