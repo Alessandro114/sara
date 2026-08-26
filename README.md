@@ -156,9 +156,9 @@ Key environment variables (see `.env.example` for the full list):
 > HNSW index it is worse than imprecise, because the vectors of the
 > minority model become unreachable rather than merely mis-ranked.
 >
-[infrastructure details removed]
-[infrastructure details removed]
-[infrastructure details removed]
+> The failure mode to watch for: a second process — a different importer, a
+> background job, a migration script — writing into the same table with its own
+> model setting. Nothing errors, and the corpus degrades silently.
 >
 > **If you change model, re-embed the whole corpus** — never incrementally —
 > and store the model name on every row so a mixed index is detectable at all:

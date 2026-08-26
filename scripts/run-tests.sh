@@ -8,49 +8,65 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # ═══════════════════════════════════════════════════
-# Protezione: da oggi questi test SCRIVONO su un database
+# Protezione: i test non toccano MAI un database remoto
 # ═══════════════════════════════════════════════════
 #
-# memoria-db.test.ts e db-sessioni.test.ts si connettono a DATABASE_URL e
-# fanno INSERT, DELETE e — attraverso initDB() — CREATE TABLE e ALTER TABLE.
-# Finche i test erano tutti in memoria non c'era niente da proteggere; da
-# quando parlano a un database, lanciarli nell'ambiente sbagliato scrive
-# nell'ambiente sbagliato.
+# memoria-db.test.ts e db-sessioni.test.ts si connettono a DATABASE_URL e fanno
+# INSERT, DELETE e — attraverso initDB() — CREATE TABLE e ALTER TABLE. Finche i
+# test erano tutti in memoria non c'era niente da proteggere; da quando parlano
+# a un database, lanciarli nell'ambiente sbagliato scrive nell'ambiente
+# sbagliato.
 #
-# Su 89 DATABASE_URL e esportato nell'ambiente della shell e punta alla
-# PRODUZIONE. Un `bash scripts/run-tests.sh` dato per abitudine prima di un
-# commit ci eseguirebbe sopra della DDL.
+# ─── Perche si ammette invece di vietare ───
 #
-# Il guard sta QUI e non in un file di setup come su scala-backend, perche
-# questo repo non usa vitest: ogni test e un processo tsx a se, e non esiste
-# un punto comune dentro Node in cui mettersi. La shell e quel punto.
+# La prima versione di questo controllo ELENCAVA gli host di produzione, per
+# nome e per indirizzo IP. Due difetti, ed erano tutti e due miei:
 #
-# Due regole:
-#   1. un DSN che PUZZA di produzione fa fallire subito, anche in CI. Nessuna
-#      opzione per aggirarlo: se serve provare contro quel database, si copia
-#      il database, non si toglie il controllo.
-#   2. fuori dalla CI un DSN qualunque viene IGNORATO se non lo si e chiesto
-#      esplicitamente con SARA_TEST_DB=1. I test del database si saltano da
-#      soli e lo dicono. Meglio saltarli che scoprire dopo dove hanno scritto.
-
-PRODUZIONE='scalacore|scala-postgres|89\.167\.27\.229|65\.108\.208\.117'
+#   1. Questo repo e PUBBLICO. Quell'elenco pubblicava gli indirizzi dei nostri
+#      server di produzione a chiunque, dentro un file che serviva a proteggerli.
+#   2. Un elenco di vietati protegge solo da cio che qualcuno si e ricordato di
+#      scriverci. Un database di produzione nuovo, o quello di un cliente, o un
+#      indirizzo che nessuno aveva previsto sarebbero passati.
+#
+# Ammettere e piu stretto e non rivela niente: un test puo parlare SOLO con un
+# database locale. Qualunque host remoto viene rifiutato, che sia nostro, di un
+# cliente o sconosciuto. Nessun indirizzo da tenere aggiornato, nessun indirizzo
+# da divulgare.
+#
+# Il guard sta nella SHELL e non in un file di setup come su scala-backend,
+# perche questo repo non usa vitest: ogni test e un processo tsx a se, e non
+# esiste un punto comune dentro Node in cui mettersi. La shell e quel punto.
 
 for _var in DATABASE_URL SCALA_DB_URL; do
     _val="${!_var:-}"
-    if [ -n "$_val" ] && printf '%s' "$_val" | grep -qE "$PRODUZIONE"; then
-        echo "════════════════════════════════════════" >&2
-        echo "RIFIUTO DI ESEGUIRE I TEST" >&2
-        echo "" >&2
-        echo "$_var punta a un database di PRODUZIONE." >&2
-        echo "Questi test fanno INSERT, DELETE e CREATE TABLE." >&2
-        echo "" >&2
-        echo "Se ti serve provare contro dati veri, copia il database." >&2
-        echo "Non togliere questo controllo." >&2
-        echo "════════════════════════════════════════" >&2
-        exit 1
-    fi
+    [ -n "$_val" ] || continue
+
+    # L'host sta fra "@" e il ":" della porta (o la "/" del nome database).
+    _host=$(printf '%s' "$_val" | sed -E 's#^[a-zA-Z+]+://##; s#^[^@]*@##; s#[:/?].*$##')
+
+    case "$_host" in
+        localhost|127.0.0.1|::1|0.0.0.0|host.docker.internal|postgres|db|"")
+            ;;   # locale o nome di servizio in un compose: ammesso
+        *)
+            echo "════════════════════════════════════════" >&2
+            echo "RIFIUTO DI ESEGUIRE I TEST" >&2
+            echo "" >&2
+            echo "$_var punta a un host REMOTO: $_host" >&2
+            echo "" >&2
+            echo "Questi test fanno INSERT, DELETE e CREATE TABLE. Possono" >&2
+            echo "parlare solo con un database locale." >&2
+            echo "" >&2
+            echo "Se ti serve provare contro dati veri, copiane una copia in" >&2
+            echo "locale. Non togliere questo controllo." >&2
+            echo "════════════════════════════════════════" >&2
+            exit 1
+            ;;
+    esac
 done
 
+# Anche in locale, un DSN che non hai chiesto tu viene ignorato: i test del
+# database si saltano da soli e lo dicono. Meglio saltarli che scoprire dopo
+# dove hanno scritto.
 if [ -z "${CI:-}" ] && [ -z "${SARA_TEST_DB:-}" ]; then
     if [ -n "${DATABASE_URL:-}" ] || [ -n "${SCALA_DB_URL:-}" ]; then
         echo "avviso: DATABASE_URL presente nell ambiente ma SARA_TEST_DB non impostata."
@@ -61,7 +77,6 @@ if [ -z "${CI:-}" ] && [ -z "${SARA_TEST_DB:-}" ]; then
     unset DATABASE_URL || true
     unset SCALA_DB_URL || true
 fi
-
 
 echo "════════════════════════════════════════"
 echo "SARA bot test runner"
