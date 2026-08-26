@@ -7,6 +7,62 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# ═══════════════════════════════════════════════════
+# Protezione: da oggi questi test SCRIVONO su un database
+# ═══════════════════════════════════════════════════
+#
+# memoria-db.test.ts e db-sessioni.test.ts si connettono a DATABASE_URL e
+# fanno INSERT, DELETE e — attraverso initDB() — CREATE TABLE e ALTER TABLE.
+# Finche i test erano tutti in memoria non c'era niente da proteggere; da
+# quando parlano a un database, lanciarli nell'ambiente sbagliato scrive
+# nell'ambiente sbagliato.
+#
+# Su 89 DATABASE_URL e esportato nell'ambiente della shell e punta alla
+# PRODUZIONE. Un `bash scripts/run-tests.sh` dato per abitudine prima di un
+# commit ci eseguirebbe sopra della DDL.
+#
+# Il guard sta QUI e non in un file di setup come su scala-backend, perche
+# questo repo non usa vitest: ogni test e un processo tsx a se, e non esiste
+# un punto comune dentro Node in cui mettersi. La shell e quel punto.
+#
+# Due regole:
+#   1. un DSN che PUZZA di produzione fa fallire subito, anche in CI. Nessuna
+#      opzione per aggirarlo: se serve provare contro quel database, si copia
+#      il database, non si toglie il controllo.
+#   2. fuori dalla CI un DSN qualunque viene IGNORATO se non lo si e chiesto
+#      esplicitamente con SARA_TEST_DB=1. I test del database si saltano da
+#      soli e lo dicono. Meglio saltarli che scoprire dopo dove hanno scritto.
+
+PRODUZIONE='scalacore|scala-postgres|89\.167\.27\.229|65\.108\.208\.117'
+
+for _var in DATABASE_URL SCALA_DB_URL; do
+    _val="${!_var:-}"
+    if [ -n "$_val" ] && printf '%s' "$_val" | grep -qE "$PRODUZIONE"; then
+        echo "════════════════════════════════════════" >&2
+        echo "RIFIUTO DI ESEGUIRE I TEST" >&2
+        echo "" >&2
+        echo "$_var punta a un database di PRODUZIONE." >&2
+        echo "Questi test fanno INSERT, DELETE e CREATE TABLE." >&2
+        echo "" >&2
+        echo "Se ti serve provare contro dati veri, copia il database." >&2
+        echo "Non togliere questo controllo." >&2
+        echo "════════════════════════════════════════" >&2
+        exit 1
+    fi
+done
+
+if [ -z "${CI:-}" ] && [ -z "${SARA_TEST_DB:-}" ]; then
+    if [ -n "${DATABASE_URL:-}" ] || [ -n "${SCALA_DB_URL:-}" ]; then
+        echo "avviso: DATABASE_URL presente nell ambiente ma SARA_TEST_DB non impostata."
+        echo "        I test del database vengono SALTATI invece di scrivere in un posto"
+        echo "        che non hai scelto. Per eseguirli: SARA_TEST_DB=1 DATABASE_URL=... $0"
+        echo ""
+    fi
+    unset DATABASE_URL || true
+    unset SCALA_DB_URL || true
+fi
+
+
 echo "════════════════════════════════════════"
 echo "SARA bot test runner"
 echo "════════════════════════════════════════"
