@@ -142,7 +142,32 @@ Key environment variables (see `.env.example` for the full list):
 | `OLLAMA_BASE_URL` | No | Ollama URL if using local embeddings |
 | `SARA_AUTONOMY_LEVEL` | No | `OFF` / `OBSERVE` / `SEMI_AUTO` / `FULL_AUTO`. Default: `OBSERVE` |
 
-> The embedding model **must produce 1024-dimensional vectors**. Changing to a different dimension silently breaks RAG retrieval. Supported: `mxbai-embed-large`, `jina-embeddings-v3`. Do not use `nomic-embed-text` (768d).
+> The embedding model **must produce 1024-dimensional vectors**. Supported:
+> `bge-m3`, `mxbai-embed-large`, `jina-embeddings-v3`. Do not use
+> `nomic-embed-text` (768d) — a dimension mismatch is rejected by pgvector at
+> the first insert, so you find out immediately.
+>
+> **The dangerous case is the opposite one: two different models that produce
+> the SAME dimension.** All three supported models emit 1024d, so pgvector
+> accepts vectors from any of them into the same column without a single
+> error — but they are different vector spaces, and the distance between a
+> vector from one model and a vector from another means nothing. A mixed index
+> gives no symptom: it returns plausible, effectively random results. With an
+> HNSW index it is worse than imprecise, because the vectors of the
+> minority model become unreachable rather than merely mis-ranked.
+>
+> This is not hypothetical. In our own deployment an index of ~50k
+> `jina-embeddings-v3` chunks silently acquired 11 `mxbai-embed-large` ones,
+> written by a second pipeline that used a different model. Nothing failed.
+>
+> **If you change model, re-embed the whole corpus** — never incrementally —
+> and store the model name on every row so a mixed index is detectable at all:
+>
+> ```sql
+> SELECT embedding_model, count(*) FROM your_table GROUP BY 1;
+> ```
+>
+> Without that column, a mixed index is indistinguishable from a healthy one.
 
 ---
 
