@@ -60,10 +60,25 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      # La copertura si MISURA a ogni giro. Prima non si misurava affatto, e
-      # in mancanza del numero si citava il rapporto fra righe di test e righe
-      # di codice (3,8%) come se fosse copertura: la copertura vera e il 56%.
-      # Due misure diverse, e quella grezza faceva sembrare il progetto messo
-      # molto peggio di com e.
+      # I test girano su TUTTE E DUE le versioni di Node: e il motivo per cui
+      # la matrice esiste.
+      - name: Test
+        if: matrix.node != '20'
+        run: bash scripts/run-tests.sh
+
+      # La copertura si MISURA su una sola versione, e va spiegato perche.
+      #
+      # Fino al 29/08 girava su entrambe, e dava due numeri diversi per lo
+      # stesso codice: 64,69% su Node 20 e 60,34% su Node 22. Non e che su 22
+      # si saltasse qualcosa — i test sono 16 e 16, zero saltati su tutte e due
+      # — e' che c8 legge la copertura da V8, e V8 di Node 22 attribuisce le
+      # righe in modo diverso da quello di Node 20. Stesso codice, stessi test,
+      # 429 righe di scarto.
+      #
+      # Due numeri per la stessa cosa non sono una misura: sono un numero che
+      # dipende da quale job si guarda. Si misura su Node 20, che e quello del
+      # Dockerfile (node:20-alpine) e quindi quello che gira davvero, e cosi il
+      # numero e confrontabile nel tempo e riferito alla versione vera.
       - name: Test e copertura
+        if: matrix.node == '20'
         run: npm run test:coverage
