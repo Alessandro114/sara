@@ -48,12 +48,12 @@ const deadline = Date.now() + TIMEOUT_MS;
 let health = null;
 while (Date.now() < deadline) {
     try {
-        const r = await fetch(`${BASE}/api/sara/health`);
+        const r = await fetch(`${BASE}/health`);
         if (r.ok) { health = await r.json(); break; }
     } catch { /* not up yet */ }
     await new Promise(r => setTimeout(r, 1000));
 }
-if (!health) fail(`/api/sara/health did not respond within ${TIMEOUT_MS / 1000}s`);
+if (!health) fail(`/health did not respond within ${TIMEOUT_MS / 1000}s`);
 
 console.log('✅ health responded:');
 console.log(JSON.stringify(health, null, 2).split('\n').map(l => '   ' + l).join('\n'));

@@ -10,6 +10,17 @@ import { fileURLToPath } from 'url';
 import { pool } from './config.js';
 import { registerWidgetRoutes } from './sara-widget.js';
 import QRCode from 'qrcode';
+import {
+    checkWahaHealth,
+    createSession,
+    getSessionStatus,
+    getQRCode,
+    getConnectedPhone,
+    stopSession,
+    handleWahaWebhook,
+} from './lib/multi-session.js';
+
+
 
 // ─── Phone number sanitization ───
 function sanitizePhone(jid: string): string {
@@ -62,7 +73,7 @@ await api.register(cors, {
 // could hijack the WhatsApp account if scanned by an attacker. It now
 // requires the admin API key, same pattern as all other admin endpoints.
 api.addHook('preHandler', async (request, reply) => {
-    if (request.url === '/api/sara/health') return;
+    if (request.url === '/health') return;
     if (request.url.startsWith('/api/sara/widget/')) return;
 
     const apiKey = request.headers['x-sara-api-key'] || request.headers['authorization']?.replace('Bearer ', '');
@@ -72,11 +83,14 @@ api.addHook('preHandler', async (request, reply) => {
     }
 });
 
-// ─── Health Check ───
-api.get('/api/sara/health', async (_req, reply) => {
+// ─── Health Check Handler ───
+async function handleHealthCheck(_req: any, reply: any) {
+    const uptime = process.uptime();
+    const checks: Record<string, string> = {};
+    let dbOk = false;
     try {
         await pool.query('SELECT 1');
-        const checks: Record<string, string> = {};
+        dbOk = true;
         try {
             await pool.query('SELECT 1 FROM crm_contacts LIMIT 0');
             checks.crm_contacts = 'ok';
@@ -89,17 +103,41 @@ api.get('/api/sara/health', async (_req, reply) => {
             await pool.query('SELECT 1 FROM sara_contact_profiles LIMIT 0');
             checks.sara_contact_profiles = 'ok';
         } catch { checks.sara_contact_profiles = 'missing_or_broken'; }
-        const degraded = Object.values(checks).some(v => v !== 'ok');
-        return reply.send({
-            status: degraded ? 'degraded' : 'ok',
-            bot: 'S.A.R.A.', version: '2.2.0',
-            checks,
+    } catch {
+        dbOk = false;
+    }
+
+    if (!dbOk) {
+        return reply.status(503).send({
+            status: 'down',
+            uptime,
+            bot: 'S.A.R.A.',
+            version: '2.2.0',
+            checks: { db: 'down', ...checks },
             timestamp: new Date().toISOString(),
         });
-    } catch {
-        return reply.status(503).send({ status: 'down', bot: 'S.A.R.A.' });
     }
-});
+
+    const waha = await checkWahaHealth();
+    const hasTableIssues = Object.values(checks).some(v => v !== 'ok');
+    const isDegraded = hasTableIssues || waha.status !== 'connected';
+
+    return reply.send({
+        status: isDegraded ? 'degraded' : 'ok',
+        uptime,
+        bot: 'S.A.R.A.',
+        version: '2.2.0',
+        waha,
+        checks: {
+            db: 'ok',
+            ...checks,
+        },
+        timestamp: new Date().toISOString(),
+    });
+}
+
+api.get('/health', handleHealthCheck);
+
 
 // ─── QR Code Endpoint (for WhatsApp pairing) ───
 api.get('/api/sara/qr', async (_req, reply) => {
@@ -455,14 +493,6 @@ api.post('/api/send-message', async (request, reply) => {
 // with x-sara-api-key auth. The user_id comes from the
 // backend's JWT validation (passed in request body/query).
 // ═══════════════════════════════════════════════════════════
-import {
-    createSession,
-    getSessionStatus,
-    getQRCode,
-    getConnectedPhone,
-    stopSession,
-    handleWahaWebhook,
-} from './lib/multi-session.js';
 
 // POST /api/sara/solo-whatsapp/connect — start a session, return QR
 api.post('/api/sara/solo-whatsapp/connect', async (request, reply) => {
@@ -533,7 +563,7 @@ try {
 ╔════════════════════════════════════════════════════╗
 ║   📡 S.A.R.A. API Bridge v2.1.0 — ONLINE         ║
 ║════════════════════════════════════════════════════║
-║   🏥 Health:    /api/sara/health                  ║
+║   🏥 Health:    /health                           ║
 ║   📊 Stats:     /api/sara/stats                   ║
 ║   💬 Convos:    /api/sara/conversations            ║
 ║   📈 Analytics: /api/sara/analytics                ║

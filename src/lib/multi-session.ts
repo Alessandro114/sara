@@ -261,3 +261,25 @@ export async function sendMessage(userId: string, chatId: string, text: string):
         return false;
     }
 }
+
+// --- Check WAHA connection health ------------------------------------
+export async function checkWahaHealth(): Promise<{
+    status: 'connected' | 'disconnected';
+    reachable: boolean;
+    sessionsCount?: number;
+    error?: string;
+}> {
+    try {
+        const info = await Promise.race([
+            wahaFetch('/api/sessions'),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('WAHA healthcheck timeout')), 3000)),
+        ]);
+        if (Array.isArray(info)) {
+            return { status: 'connected', reachable: true, sessionsCount: info.length };
+        }
+        return { status: 'connected', reachable: true };
+    } catch (err: any) {
+        return { status: 'disconnected', reachable: false, error: err?.message || 'WAHA unavailable' };
+    }
+}
+

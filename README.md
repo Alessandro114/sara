@@ -91,7 +91,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-- Verify: `curl http://localhost:3006/api/sara/health`
+- Verify: `curl http://localhost:3006/health`
 - Connect WhatsApp: open `http://localhost:3006/api/sara/qr` and scan the QR code with your WhatsApp number.
 
 SARA is running. Send a message to the connected number.
