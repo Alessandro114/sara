@@ -1,22 +1,24 @@
 // ═══════════════════════════════════════════════════
-// I numeri del README devono corrispondere al codice — vanilla node:assert
+// The numbers in the README must match the code — vanilla node:assert
 // Run: npx tsx src/__tests__/readme-numeri.test.ts
 //
-// Il README diceva 87 strumenti quando il motore ne definisce 83, e nella
-// tabella in fondo attribuiva quegli 87 a scala-agent-definitions, che ne ha
-// 80. Tre numeri sbagliati in tre punti, tutti scritti in buona fede e
-// invecchiati insieme al codice.
+// The README said 87 tools when the engine defines 83, and in the table at
+// the bottom it attributed those 87 to scala-agent-definitions, which
+// actually has 80. Three wrong numbers in three places, all written in good
+// faith and grown stale alongside the code.
 //
-// Un numero gonfiato in un README open source non e un dettaglio estetico: chi
-// valuta il progetto lo conta, e quando non torna smette di fidarsi anche del
-// resto. Con poche stelle la sincerita e l'unica leva che funziona.
+// An inflated number in an open source README isn't a cosmetic detail:
+// people evaluating the project count it, and when it doesn't add up they
+// stop trusting the rest too. With few stars, honesty is the only lever
+// that works.
 //
-// Scritto con node:assert e NON con vitest di proposito: questo repo non ha
-// vitest fra le dipendenze e il runner e scripts/run-tests.sh, che esegue ogni
-// file con tsx. Un test che importa vitest qui non fallisce — non parte
-// proprio, e il runner lo conta come errore. Ci sono cascato scrivendolo la
-// prima volta e verificandolo con `npx vitest`, che se lo prendeva dalla
-// cache: passava con uno strumento che nel progetto non esiste.
+// Written with node:assert and deliberately NOT with vitest: this repo
+// doesn't have vitest among its dependencies, and the runner is
+// scripts/run-tests.sh, which runs every file with tsx. A test that imports
+// vitest here doesn't fail — it doesn't even start, and the runner counts
+// it as an error. I fell into this trap myself writing it the first time
+// and checking it with `npx vitest`, which picked it up from the cache: it
+// passed with a tool that doesn't exist in the project.
 // ═══════════════════════════════════════════════════
 
 import assert from 'node:assert/strict';
@@ -56,8 +58,8 @@ function testNomiUnici() {
 }
 
 function testReadmeConcorda() {
-    // La riga della tabella dei repo parla di un ALTRO progetto e va esclusa:
-    // e "N AI tool definitions", con AI in mezzo.
+    // The line in the repos table talks about a DIFFERENT project and must
+    // be excluded: it's "N AI tool definitions", with AI in the middle.
     const citazioni = [...readme.matchAll(/(\d+)\s+tool definitions/gi)]
         .filter(m => !/AI tool definitions/i.test(m[0]))
         .map(m => Number(m[1]));

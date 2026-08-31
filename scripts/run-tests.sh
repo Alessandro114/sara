@@ -8,70 +8,70 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # ═══════════════════════════════════════════════════
-# Protezione: i test non toccano MAI un database remoto
+# Safeguard: tests NEVER touch a remote database
 # ═══════════════════════════════════════════════════
 #
-# memoria-db.test.ts e db-sessioni.test.ts si connettono a DATABASE_URL e fanno
-# INSERT, DELETE e — attraverso initDB() — CREATE TABLE e ALTER TABLE. Finche i
-# test erano tutti in memoria non c'era niente da proteggere; da quando parlano
-# a un database, lanciarli nell'ambiente sbagliato scrive nell'ambiente
-# sbagliato.
+# memoria-db.test.ts and db-sessioni.test.ts connect to DATABASE_URL and run
+# INSERT, DELETE, and — through initDB() — CREATE TABLE and ALTER TABLE. As
+# long as tests were all in-memory there was nothing to protect; now that
+# they talk to a database, running them in the wrong environment writes to
+# the wrong environment.
 #
-# ─── Perche si ammette invece di vietare ───
+# ─── Why allow-list instead of deny-list ───
 #
-# La prima versione di questo controllo ELENCAVA gli host di produzione, per
-# nome e per indirizzo IP. Due difetti, ed erano tutti e due miei:
+# The first version of this check LISTED production hosts, by name and by
+# IP address. Two flaws, and both were mine:
 #
-#   1. Questo repo e PUBBLICO. Quell'elenco pubblicava gli indirizzi dei nostri
-#      server di produzione a chiunque, dentro un file che serviva a proteggerli.
-#   2. Un elenco di vietati protegge solo da cio che qualcuno si e ricordato di
-#      scriverci. Un database di produzione nuovo, o quello di un cliente, o un
-#      indirizzo che nessuno aveva previsto sarebbero passati.
+#   1. This repo is PUBLIC. That list published our production servers'
+#      addresses to anyone, inside a file meant to protect them.
+#   2. A deny-list only protects against what someone remembered to write
+#      into it. A new production database, or a customer's, or an address
+#      nobody anticipated would slip right through.
 #
-# Ammettere e piu stretto e non rivela niente: un test puo parlare SOLO con un
-# database locale. Qualunque host remoto viene rifiutato, che sia nostro, di un
-# cliente o sconosciuto. Nessun indirizzo da tenere aggiornato, nessun indirizzo
-# da divulgare.
+# An allow-list is stricter and reveals nothing: a test can talk ONLY to a
+# local database. Any remote host is rejected, whether it's ours, a
+# customer's, or unknown. No addresses to keep up to date, none to disclose.
 #
-# Il guard sta nella SHELL e non in un file di setup come su scala-backend,
-# perche questo repo non usa vitest: ogni test e un processo tsx a se, e non
-# esiste un punto comune dentro Node in cui mettersi. La shell e quel punto.
+# The guard lives in the SHELL rather than in a setup file like on
+# scala-backend, because this repo doesn't use vitest: each test is its own
+# tsx process, and there's no common point inside Node to hook into. The
+# shell is that point.
 
 for _var in DATABASE_URL SCALA_DB_URL; do
     _val="${!_var:-}"
     [ -n "$_val" ] || continue
 
-    # L'host sta fra "@" e il ":" della porta (o la "/" del nome database).
+    # The host sits between "@" and the port's ":" (or the database name's "/").
     _host=$(printf '%s' "$_val" | sed -E 's#^[a-zA-Z+]+://##; s#^[^@]*@##; s#[:/?].*$##')
 
     case "$_host" in
         localhost|127.0.0.1|::1|0.0.0.0|host.docker.internal|postgres|db|"")
-            ;;   # locale o nome di servizio in un compose: ammesso
+            ;;   # local or a compose service name: allowed
         *)
             echo "════════════════════════════════════════" >&2
-            echo "RIFIUTO DI ESEGUIRE I TEST" >&2
+            echo "REFUSING TO RUN TESTS" >&2
             echo "" >&2
-            echo "$_var punta a un host REMOTO: $_host" >&2
+            echo "$_var points to a REMOTE host: $_host" >&2
             echo "" >&2
-            echo "Questi test fanno INSERT, DELETE e CREATE TABLE. Possono" >&2
-            echo "parlare solo con un database locale." >&2
+            echo "These tests run INSERT, DELETE, and CREATE TABLE. They can" >&2
+            echo "only talk to a local database." >&2
             echo "" >&2
-            echo "Se ti serve provare contro dati veri, copiane una copia in" >&2
-            echo "locale. Non togliere questo controllo." >&2
+            echo "If you need to test against real data, copy a local copy of it." >&2
+            echo "Do not remove this check." >&2
             echo "════════════════════════════════════════" >&2
             exit 1
             ;;
     esac
 done
 
-# Anche in locale, un DSN che non hai chiesto tu viene ignorato: i test del
-# database si saltano da soli e lo dicono. Meglio saltarli che scoprire dopo
-# dove hanno scritto.
+# Even locally, a DSN you didn't ask for is ignored: the database tests skip
+# themselves and say so. Better to skip them than to find out later where
+# they wrote to.
 if [ -z "${CI:-}" ] && [ -z "${SARA_TEST_DB:-}" ]; then
     if [ -n "${DATABASE_URL:-}" ] || [ -n "${SCALA_DB_URL:-}" ]; then
-        echo "avviso: DATABASE_URL presente nell ambiente ma SARA_TEST_DB non impostata."
-        echo "        I test del database vengono SALTATI invece di scrivere in un posto"
-        echo "        che non hai scelto. Per eseguirli: SARA_TEST_DB=1 DATABASE_URL=... $0"
+        echo "warning: DATABASE_URL is set in the environment but SARA_TEST_DB is not."
+        echo "         Database tests are SKIPPED instead of writing to a place you"
+        echo "         didn't choose. To run them: SARA_TEST_DB=1 DATABASE_URL=... $0"
         echo ""
     fi
     unset DATABASE_URL || true
@@ -96,32 +96,34 @@ if [ ${#tests[@]} -eq 0 ]; then
     exit 0
 fi
 
-# ── Guardia: qui non c'è vitest ────────────────────────────────────────────
+# ── Guard: there is no vitest here ─────────────────────────────────────────
 #
-# Questo progetto non ha vitest fra le dipendenze: i test sono node:assert
-# eseguiti con tsx. Un file che importa vitest non fallisce in modo leggibile —
-# muore con ERR_MODULE_NOT_FOUND prima di eseguire una sola asserzione, e in
-# mezzo all'output di undici file ci si accorge a malapena.
+# This project doesn't have vitest among its dependencies: tests are
+# node:assert scripts run with tsx. A file that imports vitest doesn't fail
+# in a readable way — it dies with ERR_MODULE_NOT_FOUND before running a
+# single assertion, and buried in the output of eleven files it's easy to
+# miss.
 #
-# Peggio: chi lo scrive lo prova con `npx vitest`, che se lo prende dalla cache
-# di npm, lo vede verde, e conclude che funziona. Passa con uno strumento che
-# nel progetto non esiste. È successo, ed è per questo che la guardia c'è.
-sbagliati=()
+# Worse: whoever writes it tests it with `npx vitest`, which — if it grabs
+# it from the npm cache — shows green, leading them to conclude it works. It
+# passes with a tool that doesn't exist in the project. This has happened,
+# which is why this guard exists.
+bad_files=()
 for t in "${tests[@]}"; do
     if grep -qE "from ['\"]vitest['\"]" "$t"; then
-        sbagliati+=("$t")
+        bad_files+=("$t")
     fi
 done
 
-if [ ${#sbagliati[@]} -gt 0 ]; then
+if [ ${#bad_files[@]} -gt 0 ]; then
     echo ""
-    echo "✖ Questi test importano vitest, che in questo progetto NON esiste:"
-    for t in "${sbagliati[@]}"; do echo "    $t"; done
+    echo "✖ These tests import vitest, which does NOT exist in this project:"
+    for t in "${bad_files[@]}"; do echo "    $t"; done
     echo ""
-    echo "  I test qui usano node:assert e girano con tsx. Vedi"
-    echo "  src/__tests__/guardrails.test.ts per la forma attesa."
-    echo "  Se li hai provati con 'npx vitest' passavano: quel vitest arriva"
-    echo "  dalla cache di npm, non dal progetto."
+    echo "  Tests here use node:assert and run with tsx. See"
+    echo "  src/__tests__/guardrails.test.ts for the expected shape."
+    echo "  If you tested them with 'npx vitest' and they passed: that vitest"
+    echo "  came from the npm cache, not from the project."
     echo ""
     exit 1
 fi

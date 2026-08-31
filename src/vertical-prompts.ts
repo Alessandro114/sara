@@ -22,15 +22,15 @@ import { promptDiPacchetto } from './pack-loader.js';
 // ─── Helper: get vertical prompt by sector key ────────────────────────────
 // Maps legacy sector ids used in wa_sessions to the new vertical prompt keys.
 /**
- * I prompt dei verticali non stanno piu qui.
+ * Vertical prompts no longer live here.
  *
- * Erano quattro costanti — VERTICAL_SYSTEM_PROMPTS e le versioni EN/ES/PT —
- * per 1.133 righe complessive. Adesso sono file JSON in `packs/`, caricati da
- * `pack-loader.ts`. Questo file conserva il MECCANISMO: la mappa dei sinonimi
- * di settore, la scelta della lingua, il footer anti-allucinazione.
+ * They used to be four constants — VERTICAL_SYSTEM_PROMPTS and the EN/ES/PT
+ * versions — totaling 1,133 lines. Now they are JSON files in `packs/`,
+ * loaded by `pack-loader.ts`. This file keeps the MECHANISM: the sector
+ * synonym map, the language selection, the anti-hallucination footer.
  *
- * Il repo include `general` e `dine`. Per aggiungere il proprio settore basta
- * un file JSON: nessuna modifica al codice, nessuna ricompilazione.
+ * The repo includes `general` and `dine`. To add your own sector, just add
+ * a JSON file: no code changes, no recompiling.
  */
 
 const SECTOR_TO_VERTICAL: Record<string, string> = {
@@ -71,10 +71,10 @@ const SECTOR_TO_VERTICAL: Record<string, string> = {
  * When lang starts with 'en', returns the English version if available.
  */
 export function getVerticalPrompt(sector: string, lang: string = 'it'): string {
-    // `SECTOR_TO_VERTICAL` traduce i 29 sinonimi di settore (ristorante, turismo,
-    // bellezza...) nelle chiavi dei pacchetti. Se il pacchetto non c'e,
-    // promptDiPacchetto ripiega su `general`: un settore rimosso non rompe nulla,
-    // risponde in modo generico.
+    // `SECTOR_TO_VERTICAL` translates the 29 sector synonyms (ristorante,
+    // turismo, bellezza...) into pack keys. If the pack doesn't exist,
+    // promptDiPacchetto falls back to `general`: a removed sector doesn't
+    // break anything, it just responds generically.
     const key = SECTOR_TO_VERTICAL[sector] || 'general';
     return promptDiPacchetto('vertical', key, lang);
 }

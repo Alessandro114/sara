@@ -650,11 +650,11 @@ import { embedChain } from './lib/ai-providers.js';
 import { promptDiPacchetto, pacchettiSettori } from './pack-loader.js';
 
 /**
- * I prompt di settore non stanno piu qui: sono pacchetti JSON in `packs/`.
+ * Sector prompts no longer live here: they are JSON packs in `packs/`.
  *
- * Questa costante resta esportata perche `ai.ts` e `lib/dream-cycle.ts` la
- * leggono come oggetto. Ha la stessa forma di prima — chiave di settore ->
- * testo italiano — ma il contenuto arriva dai pacchetti caricati.
+ * This constant is still exported because `ai.ts` and `lib/dream-cycle.ts`
+ * read it as an object. It has the same shape as before — sector key →
+ * Italian text — but the content comes from the loaded packs.
  */
 export const SECTOR_PROMPTS: Record<string, string> = new Proxy({} as Record<string, string>, {
     get: (_t, k: string) => promptDiPacchetto('sector', k, 'it'),

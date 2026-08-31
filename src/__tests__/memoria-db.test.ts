@@ -1,28 +1,28 @@
 // ═══════════════════════════════════════════════════
-// persistent-memory contro un Postgres vero — node:assert
+// persistent-memory against a real Postgres — node:assert
 // Run: DATABASE_URL=postgres://... npx tsx src/__tests__/memoria-db.test.ts
 //
-// Il grosso del codice non coperto di questo repo parla al database:
-// persistent-memory era al 27%, db.ts al 6,7%. Non perche sia codice
-// trascurato, ma perche in prova non c'e mai stato un database a cui parlare.
+// Most of the uncovered code in this repo talks to the database:
+// persistent-memory was at 27%, db.ts at 6.7%. Not because it's neglected
+// code, but because in testing there had never been a database to talk to.
 //
-// La soluzione non e rattoppare il modulo `pg` con dei finti: quei test
-// verificherebbero i finti. La soluzione e dare alla prova un Postgres vuoto e
-// usa-e-getta — in CI e un container che dura quanto il job — e far girare il
-// codice VERO. ensureMemorySchema() si crea le tabelle da solo, quindi non
-// serve nemmeno una migrazione.
+// The fix isn't to mock the `pg` module: those tests would just verify the
+// mocks. The fix is to give the test a fresh, disposable Postgres — in CI
+// it's a container that lasts as long as the job — and run the REAL code.
+// ensureMemorySchema() creates its own tables, so no migration is even
+// needed.
 //
-// ATTENZIONE a come si scrivono le asserzioni qui dentro: OGNI funzione di
-// persistent-memory cattura le proprie eccezioni e restituisce un ripiego —
-// [] per le letture, niente per le scritture. E una scelta deliberata (la
-// memoria non deve mai far cadere un messaggio di WhatsApp), ma per i test
-// significa che un assert su Array.isArray passa anche con la query
-// completamente rotta. Ogni test qui sotto deve percio verificare un DATO che
-// puo esistere solo se la query ha funzionato davvero.
+// BE CAREFUL how assertions are written here: EVERY persistent-memory
+// function catches its own exceptions and returns a fallback — [] for
+// reads, nothing for writes. That's a deliberate choice (memory must never
+// crash a WhatsApp message), but for tests it means an assert on
+// Array.isArray passes even with a completely broken query. Every test
+// below must therefore verify a piece of DATA that can only exist if the
+// query actually worked.
 //
-// Senza DATABASE_URL il file si salta invece di fallire: in locale non tutti
-// hanno un Postgres, e un test rosso per assenza di ambiente addestra a
-// ignorare i test rossi.
+// Without DATABASE_URL the file is skipped rather than failing: not
+// everyone has a local Postgres, and a red test for a missing environment
+// just trains people to ignore red tests.
 // ═══════════════════════════════════════════════════
 
 import assert from 'node:assert/strict';
@@ -38,13 +38,13 @@ import {
 
 const DSN = process.env.SCALA_DB_URL || process.env.DATABASE_URL;
 
-// Identificativi che non possono collidere con dati veri.
+// Identifiers that can't collide with real data.
 const UTENTE = '00000000-0000-0000-0000-0000000000e2';
 const ALTRO_UTENTE = '00000000-0000-0000-0000-0000000000e3';
 const TEL = '+39000' + String(Date.now()).slice(-7);
 
-// Connessione diretta, usata SOLO per seminare dati e per leggere cio che il
-// modulo non espone. Il codice in prova continua a usare il proprio pool.
+// Direct connection, used ONLY to seed data and to read what the module
+// doesn't expose. The code under test keeps using its own pool.
 let diretta: any = null;
 async function conn() {
     if (diretta) return diretta;
@@ -56,9 +56,10 @@ async function conn() {
 
 async function testSchema() {
     await ensureMemorySchema();
-    // Non basta che non sollevi: ensureMemorySchema cattura tutto e si limita a
-    // un warning. Se fallisse in silenzio, ogni test successivo fallirebbe con
-    // un messaggio molto meno chiaro di questo.
+    // It's not enough that it doesn't throw: ensureMemorySchema catches
+    // everything and just logs a warning. If it failed silently, every
+    // subsequent test would fail with a much less clear message than this
+    // one.
     const p = await conn();
     const { rows } = await p.query(
         `SELECT tablename FROM pg_tables
@@ -82,9 +83,9 @@ async function testSalvaERilegge() {
 }
 
 async function testDirezioneTradottaInRuolo() {
-    // Il database registra inbound/outbound, il modello vuole user/assistant.
-    // Se la traduzione si inverte, il modello crede di aver detto lui cio che
-    // ha detto il cliente — e risponde a se stesso.
+    // The database records inbound/outbound, the model wants user/assistant.
+    // If the mapping is flipped, the model believes it said what the
+    // customer said — and ends up replying to itself.
     const storia = await loadHistory(UTENTE, TEL, 10);
     const entrata = storia.find(m => m.content.includes('vorrei prenotare'));
     const uscita = storia.find(m => m.content.includes('per quale sera'));
@@ -94,8 +95,9 @@ async function testDirezioneTradottaInRuolo() {
 }
 
 async function testOrdineCronologico() {
-    // loadHistory legge in ordine DESC e poi inverte: la storia va al modello
-    // come contesto, e invertita racconta una conversazione mai avvenuta.
+    // loadHistory reads in DESC order and then reverses it: history goes to
+    // the model as context, and reversed it tells a conversation that never
+    // happened.
     const storia = await loadHistory(UTENTE, TEL, 10);
     const iEntrata = storia.findIndex(m => m.content.includes('vorrei prenotare'));
     const iUscita = storia.findIndex(m => m.content.includes('per quale sera'));
@@ -105,8 +107,8 @@ async function testOrdineCronologico() {
 }
 
 async function testIsolamentoFraContatti() {
-    // Il difetto piu grave possibile qui: la conversazione di un cliente che
-    // finisce nel contesto di un altro.
+    // The worst possible defect here: one customer's conversation ending up
+    // in another's context.
     const altro = '+39000' + String(Date.now() + 1).slice(-7);
     await saveMessage(UTENTE, altro, 'inbound', 'MESSAGGIO-DI-UN-ALTRO-CONTATTO');
     const mia = await loadHistory(UTENTE, TEL, 50);
@@ -117,9 +119,10 @@ async function testIsolamentoFraContatti() {
 }
 
 async function testIsolamentoFraUtenti() {
-    // Stessa cosa fra tenant diversi: due aziende sullo stesso numero non
-    // devono vedersi. Qui il telefono e IDENTICO, cambia solo user_id: se la
-    // WHERE dimenticasse user_id, questo test lo vedrebbe e l'altro no.
+    // Same thing across different tenants: two companies on the same number
+    // must not see each other. Here the phone is IDENTICAL, only user_id
+    // changes: if the WHERE clause forgot user_id, this test would catch it
+    // and the previous one wouldn't.
     await saveMessage(ALTRO_UTENTE, TEL, 'inbound', 'MESSAGGIO-DI-UN-ALTRO-UTENTE');
     const mia = await loadHistory(UTENTE, TEL, 50);
     assert.ok(mia.length > 0, 'la storia e vuota: il test non sta verificando nulla');
@@ -129,8 +132,9 @@ async function testIsolamentoFraUtenti() {
 }
 
 async function testLimite() {
-    // 25 messaggi, non 5: sopra la ventina si apre il ramo vero di
-    // getConversationSummary, che sotto quella soglia esce subito.
+    // 25 messages, not 5: past twenty it opens the real branch of
+    // getConversationSummary, which below that threshold returns
+    // immediately.
     for (let i = 0; i < 25; i++) {
         await saveMessage(UTENTE, TEL, i % 2 === 0 ? 'inbound' : 'outbound', `riempitivo numero ${i}`);
     }
@@ -156,8 +160,8 @@ async function testProfilo() {
     const p = await getContactProfile(UTENTE, TEL);
     assert.ok(p, 'nessun profilo dopo un aggiornamento');
     assert.ok(p!.interaction_count >= 1, 'il contatore delle interazioni e a zero');
-    // "mi chiamo Mario Rossi" deve far scattare l estrazione del nome: e
-    // l unico pezzo di upsertContactProfile che non sia contabilita.
+    // "mi chiamo Mario Rossi" must trigger name extraction: it's the only
+    // part of upsertContactProfile that isn't just bookkeeping.
     assert.equal(p!.name, 'Mario Rossi', `nome estratto sbagliato: ${JSON.stringify(p!.name)}`);
     console.log(`✅ testProfilo: nome "${p!.name}", ${p!.interaction_count} interazioni`);
 }
@@ -171,8 +175,8 @@ async function testProfiloContaLeInterazioni() {
 }
 
 async function testProfiloNonPerdeIlNome() {
-    // Il nome si scrive solo se non c'e gia: un "sono Interessato" non deve
-    // ribattezzare Mario Rossi.
+    // The name is written only if not already set: a "sono Interessato"
+    // must not rename Mario Rossi.
     await upsertContactProfile(UTENTE, TEL, 'sono Interessato al menu', 'ecco il menu');
     const p = await getContactProfile(UTENTE, TEL);
     assert.equal(p!.name, 'Mario Rossi', `il nome e stato sovrascritto: ${JSON.stringify(p!.name)}`);
@@ -181,16 +185,16 @@ async function testProfiloNonPerdeIlNome() {
 
 async function testContattoSconosciuto() {
     const p = await getContactProfile(UTENTE, '+390000000000');
-    // Puo crearlo al volo o restituire null: entrambi vanno bene, purche non
-    // restituisca il profilo di qualcun altro.
+    // It may create it on the fly or return null: either is fine, as long
+    // as it doesn't return someone else's profile.
     assert.ok(p === null || (typeof p === 'object' && p.name !== 'Mario Rossi'),
         'un contatto mai visto restituisce il profilo di un altro');
     console.log('✅ testContattoSconosciuto: nessuna confusione su un contatto mai visto');
 }
 
 async function testRiassunto() {
-    // Sopra i 20 messaggi il riassunto viene costruito davvero (conteggio,
-    // giorni, ultimo argomento). Sotto, la funzione esce con stringa vuota.
+    // Above 20 messages the summary is actually built (count, days, last
+    // topic). Below that, the function returns an empty string.
     const s = await getConversationSummary(UTENTE, TEL);
     assert.equal(typeof s, 'string', 'il riassunto non e un testo');
     assert.ok(s.length > 0, 'con oltre 20 messaggi il riassunto non dovrebbe essere vuoto');
@@ -198,8 +202,9 @@ async function testRiassunto() {
 }
 
 async function testRicercaConoscenza() {
-    // Senza seminare, questa ricerca restituirebbe [] sia funzionando sia
-    // rotta — searchKnowledgeBase cattura le proprie eccezioni. Semino io.
+    // Without seeding, this search would return [] whether working or
+    // broken — searchKnowledgeBase catches its own exceptions. So I seed
+    // it myself.
     const p = await conn();
     await p.query(
         `INSERT INTO sara_knowledge_base (user_id, category, question, answer, keywords, priority)
@@ -220,7 +225,7 @@ async function testRicercaIsolataPerUtente() {
 }
 
 async function testRicercaVuotaNonSolleva() {
-    // Parole sotto i 3 caratteri: la funzione esce prima della query.
+    // Words under 3 characters: the function returns before the query.
     for (const q of ['', '  ', 'a b']) {
         const r = await searchKnowledgeBase(UTENTE, q, 3);
         assert.deepEqual(r, [], `"${q}" doveva dare elenco vuoto, ha dato ${r.length} voci`);

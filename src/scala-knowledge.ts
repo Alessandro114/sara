@@ -639,42 +639,43 @@ export function isScalaPlatformQuery(text: string): boolean {
         'carica un', 'importa', 'configura',
         // Pricing signals (P2 audit fix)
         'prezzo', 'prezzi', 'quanto costa', 'quanto costano',
-        // 'costa' e 'costano' da soli NO: in italiano "costa" e anche il
-        // litorale e "costoso" un aggettivo qualsiasi. La frase intera basta,
-        // e il segnale singolo faceva scattare il listino su "un tavolo vista
-        // costa".
+        // 'costa' and 'costano' alone NO: in Italian "costa" is also the
+        // coastline, and "costoso" (expensive) is just an ordinary adjective.
+        // The full phrase is enough, and the single-word signal used to
+        // trigger the price list on "a table with a view costs [a lot]".
         'pricing', 'price', 'cost', 'how much', 'plan', 'piani',
         'precio', 'cuesta', 'plano', 'preço',
         'abbonamento', 'subscription', 'trial', 'free', 'gratuito',
     ];
 
-    // Le frasi (piu parole) si cercano come sottostringa: "come si usa" dentro
-    // una domanda piu lunga e esattamente cio che vogliamo trovare.
+    // Phrases (multiple words) are searched as a substring: "come si usa"
+    // (how do you use it) inside a longer question is exactly what we want
+    // to find.
     const frasi = platformSignals.filter(s => s.includes(' '));
     if (frasi.some(f => lower.includes(f))) return true;
 
-    // Le parole singole NO: cercarle come sottostringa produceva falsi
-    // positivi seri, perche i segnali corti vivono dentro parole comuni.
+    // Single words NO: searching for them as a substring produced serious
+    // false positives, because short signals live inside common words.
     //
-    //   "un tavolo vista costa"        -> costa
-    //   "il vino e costoso"            -> cost
-    //   "vorrei un costume da bagno"   -> cost
-    //   "sono un freelance"            -> free
-    //   "lavoro nel settore industriale" -> trial   (indus-TRIAL-e)
+    //   "un tavolo vista costa" (a table with a view costs [a lot]) -> costa
+    //   "il vino e costoso" (the wine is expensive)                 -> cost
+    //   "vorrei un costume da bagno" (I'd like swim trunks)         -> cost
+    //   "sono un freelance" (I'm a freelancer)                      -> free
+    //   "lavoro nel settore industriale" (I work in industry)       -> trial   (indus-TRIAL-e)
     //
-    // In tutti e cinque i casi SARA iniettava il listino della piattaforma
-    // nella conversazione: un cliente che prenota la cena si sentiva
-    // rispondere sugli abbonamenti da 97 euro al mese.
+    // In all five cases SARA was injecting the platform price list into the
+    // conversation: a customer booking a table for dinner would get a reply
+    // about €97/month subscriptions.
     //
-    // \p{L} e \p{N} invece di \w perche i messaggi sono in italiano, spagnolo
-    // e portoghese: con \w, "però" spezzerebbe sulla lettera accentata.
+    // \p{L} and \p{N} instead of \w because messages come in Italian, Spanish
+    // and Portuguese: with \w, "però" would split on the accented letter.
     const parole = platformSignals.filter(s => !s.includes(' '));
     const alternative = parole.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
     const confineDiParola = new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${alternative})(?:[^\\p{L}\\p{N}]|$)`, 'u');
     return confineDiParola.test(lower);
 }
 
-// ─── Pricing knowledge (aggiornato 2026-04-20) ───
+// ─── Pricing knowledge (updated 2026-04-20) ───
 export const SCALA_PRICING = `
 SCALA AI OS — Pricing 2026 (in vigore):
 
@@ -782,7 +783,7 @@ S = Strategy, C = Confirmation (nao "Cash"), A = Activation, L = Leverage, A = A
 function isPricingQuery(query: string): boolean {
     const lower = query.toLowerCase();
 
-    // Frasi: si cercano come sottostringa, ed e giusto cosi.
+    // Phrases: searched as a substring, and that's correct.
     const frasi = [
         'quanto costa', 'quanto costano', 'quanto custa', 'quanto custam',
         'how much', 'cuanto cuesta', 'cuánto cuesta', 'cuanto cuestan',
@@ -790,23 +791,27 @@ function isPricingQuery(query: string): boolean {
     ];
     if (frasi.some(f => lower.includes(f))) return true;
 
-    // Parole singole, cercate con i confini di parola.
+    // Single words, searched with word boundaries.
     //
-    // Tolti rispetto a prima, e ognuno faceva danno da solo:
+    // Removed compared to before, each one causing damage on its own:
     //
-    //   '49','149','298'  numeri nudi, cercati come sottostringa. Un numero di
-    //                     telefono contiene quasi sempre "49": "+39 349 12345"
-    //                     faceva iniettare il listino intero. Ed erano anche
-    //                     OBSOLETI — i prezzi veri sono 97, 197, 970, 1970.
-    //   '€'               un ristorante che scrive "il vino costa 25€" non sta
-    //                     chiedendo il listino della piattaforma.
-    //   'quanto'          "quanto tempo ci vuole", "quanto dista".
-    //   'piano'           "siamo al piano terra", "vai piano".
-    //   'costa','costano' "un tavolo vista costa".
+    //   '49','149','298'  bare numbers, searched as a substring. A phone
+    //                     number almost always contains "49": "+39 349 12345"
+    //                     would inject the entire price list. They were also
+    //                     OUTDATED — the real prices are 97, 197, 970, 1970.
+    //   '€'               a restaurant writing "il vino costa 25€" (the wine
+    //                     costs €25) is not asking for the platform's price list.
+    //   'quanto' (how)    "quanto tempo ci vuole" (how long does it take),
+    //                     "quanto dista" (how far is it).
+    //   'piano' (floor/slow) "siamo al piano terra" (we're on the ground
+    //                     floor), "vai piano" (go slow).
+    //   'costa','costano' (costs/cost) "un tavolo vista costa" (a table with
+    //                     a view costs [a lot]).
     //
-    // Restavano nella conversazione di CHIUNQUE: il listino della piattaforma
-    // finiva nel contesto del modello mentre un cliente prenotava la cena, e il
-    // modello veniva invitato a parlargli di abbonamenti da 97 euro.
+    // These kept firing in ANYONE's conversation: the platform price list
+    // ended up in the model's context while a customer was booking dinner,
+    // and the model would be prompted to tell them about €97/month
+    // subscriptions.
     const parole = [
         'prezzo', 'prezzi', 'costo', 'costi', 'piani', 'tariffe', 'tariffa',
         'pricing', 'price', 'prices', 'cost', 'plan', 'plans',

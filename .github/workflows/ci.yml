@@ -14,22 +14,23 @@ jobs:
       matrix:
         node: ['20', '22']
 
-    # Un Postgres vuoto e usa-e-getta, che dura quanto il job.
+    # A fresh, disposable Postgres instance that lasts only for the job.
     #
-    # Serve perche il grosso del codice non coperto parla al database — db.ts
-    # era al 6,7%, persistent-memory al 27% — e non perche sia codice
-    # trascurato: in prova non c'era mai stato un database a cui parlare.
+    # This is needed because most of the uncovered code talks to the
+    # database — db.ts was at 6.7%, persistent-memory at 27% — not because
+    # it's neglected code: in testing there had never been a database to
+    # talk to.
     #
-    # L'alternativa sarebbe rattoppare il modulo `pg` con dei finti, ma quei
-    # test verificherebbero i finti. Qui gira il codice VERO contro un
-    # database vero, e ensureMemorySchema() si crea le tabelle da solo.
+    # The alternative would be to mock the `pg` module, but then the tests
+    # would just be verifying the mocks. Here the REAL code runs against a
+    # real database, and ensureMemorySchema() creates its own tables.
     services:
       postgres:
-        # pgvector, non postgres semplice: initDB() di db.ts apre con
-        # CREATE EXTENSION vector, perche la tabella della conoscenza tiene gli
-        # embedding come vector(1024). Con postgres:15 initDB fallisce alla
-        # prima riga — ed e proprio il caso che il messaggio d'errore di db.ts
-        # spiega ("Use the pgvector/pgvector image").
+        # pgvector, not plain postgres: db.ts's initDB() starts with
+        # CREATE EXTENSION vector, because the knowledge table stores
+        # embeddings as vector(1024). With postgres:15, initDB fails on the
+        # very first line — which is exactly the case db.ts's error message
+        # explains ("Use the pgvector/pgvector image").
         image: pgvector/pgvector:pg15
         env:
           POSTGRES_USER: sara
@@ -60,10 +61,27 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      # La copertura si MISURA a ogni giro. Prima non si misurava affatto, e
-      # in mancanza del numero si citava il rapporto fra righe di test e righe
-      # di codice (3,8%) come se fosse copertura: la copertura vera e il 56%.
-      # Due misure diverse, e quella grezza faceva sembrare il progetto messo
-      # molto peggio di com e.
-      - name: Test e copertura
+      # Tests run on BOTH Node versions: that's the whole reason the matrix
+      # exists.
+      - name: Test
+        if: matrix.node != '20'
+        run: bash scripts/run-tests.sh
+
+      # Coverage is MEASURED on a single version, and it's worth explaining
+      # why.
+      #
+      # Until 08/29 it ran on both, and gave two different numbers for the
+      # same code: 64.69% on Node 20 and 60.34% on Node 22. It's not that
+      # something gets skipped on 22 — 16 and 16 tests, zero skipped on
+      # either — it's that c8 reads coverage from V8, and Node 22's V8
+      # attributes lines differently than Node 20's does. Same code, same
+      # tests, a 429-line gap.
+      #
+      # Two numbers for the same thing isn't a measurement: it's a number
+      # that depends on which job you look at. We measure on Node 20, which
+      # is what the Dockerfile uses (node:20-alpine) and therefore what
+      # actually runs in production, so the number stays comparable over
+      # time and reflects the real version.
+      - name: Test and coverage
+        if: matrix.node == '20'
         run: npm run test:coverage

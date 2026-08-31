@@ -1,21 +1,22 @@
 // ═══════════════════════════════════════════════════
-// db.ts contro un Postgres vero — node:assert
+// db.ts against a real Postgres — node:assert
 // Run: DATABASE_URL=postgres://... npx tsx src/__tests__/db-sessioni.test.ts
 //
-// db.ts era il file meno coperto del repo: 6,7% di righe, 6,66% di funzioni.
-// Non perche sia codice trascurato — ci passa ogni messaggio che il bot
-// riceve — ma perche in prova non c'e mai stato un database a cui parlare.
+// db.ts was the least covered file in the repo: 6.7% of lines, 6.66% of
+// functions. Not because it's neglected code — every message the bot
+// receives passes through it — but because in testing there was never a
+// database to talk to.
 //
-// A differenza di persistent-memory, qui le funzioni NON inghiottono gli
-// errori: sollevano. E la scelta giusta (una sessione che non si salva e un
-// guasto, non un dettaglio) e rende i test onesti senza sforzo: se una query
-// e rotta, il test esplode invece di ricevere un [] silenzioso.
+// Unlike persistent-memory, here the functions do NOT swallow errors: they
+// throw. That's the right choice (a session that doesn't save is an outage,
+// not a detail), and it makes the tests honest for free: if a query is
+// broken, the test blows up instead of quietly getting an empty [].
 //
-// Serve pgvector: initDB() apre con CREATE EXTENSION vector, perche la
-// tabella della conoscenza tiene gli embedding come vector(1024). Il job usa
-// percio l'immagine pgvector/pgvector:pg15 e non postgres:15 — con la seconda
-// initDB() fallisce alla prima riga, ed e proprio il caso che il messaggio
-// d'errore di db.ts spiega.
+// Requires pgvector: initDB() opens with CREATE EXTENSION vector, because
+// the knowledge table holds embeddings as vector(1024). The job therefore
+// uses the pgvector/pgvector:pg15 image and not postgres:15 — with the
+// latter, initDB() fails on the very first line, which is exactly the case
+// that db.ts's error message explains.
 // ═══════════════════════════════════════════════════
 
 import assert from 'node:assert/strict';
@@ -38,8 +39,8 @@ import {
 
 const DSN = process.env.DATABASE_URL;
 
-// Un numero per ogni giro: i test non devono ereditare lo stato del giro
-// precedente ne dipendere dall'ordine.
+// One number per run: tests must not inherit state from the previous run
+// nor depend on ordering.
 const TEL = '+39000' + String(Date.now()).slice(-7);
 const TEL2 = '+39000' + String(Date.now() + 7).slice(-7);
 
@@ -54,9 +55,9 @@ async function testInitDB() {
 }
 
 async function testInitDBIdempotente() {
-    // Ogni istruzione di initDB e CREATE ... IF NOT EXISTS: chiamarla due
-    // volte deve essere innocuo. Se non lo fosse, ogni riavvio del bot
-    // fallirebbe — e il bot chiama initDB() a ogni avvio.
+    // Every statement in initDB is CREATE ... IF NOT EXISTS: calling it
+    // twice must be harmless. If it weren't, every bot restart would fail —
+    // and the bot calls initDB() on every startup.
     await initDB();
     console.log('✅ testInitDBIdempotente: la seconda chiamata non solleva');
 }
@@ -79,7 +80,7 @@ async function testCreaSessione() {
 }
 
 async function testAggiornaSessione() {
-    // Il secondo upsert prende l'altro ramo: UPDATE invece di INSERT.
+    // The second upsert takes the other branch: UPDATE instead of INSERT.
     await upsertSession(TEL, { user_name: 'Marco', company_name: 'Trattoria Marco' });
     const s = await getSession(TEL);
     assert.equal(s.user_name, 'Marco');
@@ -90,8 +91,8 @@ async function testAggiornaSessione() {
 }
 
 async function testCampiFacoltativi() {
-    // I rami booleani si scrivono a parte nel codice (cta_shown, opted_out,
-    // lead_score), quindi vanno esercitati esplicitamente.
+    // The boolean branches are written separately in the code (cta_shown,
+    // opted_out, lead_score), so they need to be exercised explicitly.
     await upsertSession(TEL, { cta_shown: true, lead_score: 5, email: 'marco@trattoria.it' });
     const s = await getSession(TEL);
     assert.equal(s.cta_shown, true);
@@ -101,9 +102,9 @@ async function testCampiFacoltativi() {
 }
 
 async function testOptOutTimbraLOra() {
-    // opted_out non e un booleano qualunque: quando diventa vero il codice
-    // scrive anche opted_out_at. E il momento in cui una persona chiede di
-    // non essere piu contattata, e la data serve a dimostrare quando.
+    // opted_out isn't just any boolean: when it becomes true the code also
+    // writes opted_out_at. It's the moment a person asks not to be
+    // contacted anymore, and the date is there to prove when.
     await upsertSession(TEL2, { sector: 'general' });
     await upsertSession(TEL2, { opted_out: true });
     const s = await getSession(TEL2);
@@ -113,9 +114,9 @@ async function testOptOutTimbraLOra() {
 }
 
 async function testUpdateLeadInfoVuoto() {
-    // Nessun campo da aggiornare: la funzione deve uscire PRIMA di costruire
-    // la query. Senza quel controllo si comporrebbe "SET  WHERE phone=$1",
-    // che e un errore di sintassi.
+    // No field to update: the function must exit BEFORE building the
+    // query. Without that check it would produce "SET  WHERE phone=$1",
+    // which is a syntax error.
     const prima = await getSession(TEL);
     await updateLeadInfo(TEL, {});
     const dopo = await getSession(TEL);
@@ -137,14 +138,14 @@ async function testStoricoConversazione() {
     const storia = await getConversationHistory(TEL, 10);
     assert.ok(storia.length >= 2, `attesi 2 messaggi, trovati ${storia.length}`);
 
-    // in→user, out→model: se la traduzione si inverte il modello crede di aver
-    // detto lui cio che ha detto il cliente, e risponde a se stesso.
+    // in→user, out→model: if the mapping gets reversed, the model thinks it
+    // said what the customer said, and answers itself.
     const domanda = storia.find(m => m.content.includes('quanto costa'));
     const risposta = storia.find(m => m.content.includes('49 euro'));
     assert.equal(domanda?.role, 'user');
     assert.equal(risposta?.role, 'model');
 
-    // E l'ordine dev'essere cronologico: la query legge DESC e poi inverte.
+    // And the order must be chronological: the query reads DESC and then reverses it.
     const iD = storia.findIndex(m => m.content.includes('quanto costa'));
     const iR = storia.findIndex(m => m.content.includes('49 euro'));
     assert.ok(iD < iR, `ordine invertito: domanda in ${iD}, risposta in ${iR}`);
@@ -152,8 +153,8 @@ async function testStoricoConversazione() {
 }
 
 async function testStoricoSoloTesto() {
-    // Un audio senza trascrizione non ha contenuto da dare al modello: la
-    // query filtra su media_type='text' apposta.
+    // An audio message without a transcript has no content to give the
+    // model: the query filters on media_type='text' on purpose.
     await logMessage(TEL, 'in', '', 'audio');
     const storia = await getConversationHistory(TEL, 20);
     assert.ok(!storia.some(m => m.content === '' || m.content === null),
@@ -192,8 +193,8 @@ async function testUltimiArgomentiVuoto() {
 }
 
 async function testUltimiArgomentiTronca() {
-    // Ogni messaggio viene tagliato a 100 caratteri: senza il taglio, cinque
-    // messaggi lunghi entrerebbero interi nel contesto del modello.
+    // Every message is truncated to 100 characters: without the truncation,
+    // five long messages would go into the model's context in full.
     const tel = '+39000' + String(Date.now() + 11).slice(-7);
     await upsertSession(tel, {});
     await logMessage(tel, 'in', 'A'.repeat(500));
@@ -203,7 +204,7 @@ async function testUltimiArgomentiTronca() {
 }
 
 async function testPunteggioSoglie() {
-    // Le tre soglie del codice: <20 new, >=20 engaged, >=50 qualified.
+    // The three thresholds in the code: <20 new, >=20 engaged, >=50 qualified.
     const tel = '+39000' + String(Date.now() + 3).slice(-7);
     await upsertSession(tel, { sector: 'general' });
 
@@ -221,13 +222,14 @@ async function testPunteggioSoglie() {
 }
 
 async function testPunteggioSoglieAlBordo() {
-    // I bordi esatti, 19/20 e 49/50. Le soglie sono `>=`, e un fuori-di-uno
-    // qui sposta chi viene contattato e chi finisce nel CRM.
+    // The exact edges, 19/20 and 49/50. The thresholds are `>=`, and an
+    // off-by-one here changes who gets contacted and who ends up in the CRM.
     //
-    // Serve anche da rete contro il difetto appena corretto: updateLeadScore
-    // leggeva la sessione DOPO l'UPDATE e sommava il delta una seconda volta,
-    // quindi lo stadio si calcolava sul doppio e le soglie scattavano a meta.
-    // Con quel difetto in piedi, questi due test falliscono entrambi.
+    // This also acts as a regression guard for a defect just fixed:
+    // updateLeadScore read the session AFTER the UPDATE and added the delta
+    // a second time, so the stage was computed on double the score and the
+    // thresholds fired halfway. With that defect in place, both of these
+    // tests fail.
     const a = '+39000' + String(Date.now() + 21).slice(-7);
     await upsertSession(a, {});
     await updateLeadScore(a, 19);
@@ -253,8 +255,9 @@ async function testPunteggioNonScendeSottoZero() {
 }
 
 async function testConvertitoNonTornaIndietro() {
-    // Chi ha gia comprato non deve tornare "engaged" perche il punteggio si
-    // muove: sarebbe un cliente riproposto come lead da coltivare.
+    // Someone who has already bought must not go back to "engaged" just
+    // because the score moves: that would be a customer re-pitched as a
+    // lead to nurture.
     const tel = '+39000' + String(Date.now() + 5).slice(-7);
     await upsertSession(tel, {});
     await pool.query("UPDATE wa_sessions SET lead_stage='converted' WHERE phone=$1", [tel]);
@@ -265,7 +268,7 @@ async function testConvertitoNonTornaIndietro() {
 }
 
 async function testPunteggioSuSessioneAssente() {
-    // Nessuna sessione: la funzione esce senza sollevare.
+    // No session: the function exits without throwing.
     await updateLeadScore('+390000000002', 10);
     console.log('✅ testPunteggioSuSessioneAssente: nessuna eccezione');
 }
@@ -279,15 +282,15 @@ async function testProgrammaSolleciti() {
     assert.equal(rows.length, 6, `attesi 6 solleciti, trovati ${rows.length}`);
     assert.equal(rows[0].followup_type, 'reengagement_7d');
     assert.equal(rows[5].followup_type, 'reengagement_300d');
-    // Tutti nel futuro: uno nel passato partirebbe subito.
+    // All in the future: one in the past would fire immediately.
     assert.ok(rows.every((r: any) => new Date(r.scheduled_at) > new Date()),
         'un sollecito e programmato nel passato');
     console.log('✅ testProgrammaSolleciti: 6 solleciti da 7 a 300 giorni, tutti futuri');
 }
 
 async function testRiprogrammareAnnullaIPrecedenti() {
-    // Se il contatto riscrive, i solleciti vecchi vanno annullati: altrimenti
-    // riceve due volte lo stesso richiamo.
+    // If the contact writes again, the old follow-ups must be cancelled:
+    // otherwise they get the same reminder twice.
     await scheduleFollowups(TEL, 'Marco', 'ristorazione');
     const { rows: attivi } = await pool.query(
         'SELECT count(*)::int AS n FROM wa_lead_followups WHERE phone=$1 AND cancelled=false', [TEL]);
@@ -299,14 +302,14 @@ async function testRiprogrammareAnnullaIPrecedenti() {
 }
 
 async function testSolleciti() {
-    // getPendingFollowups prende solo quelli gia scaduti: i sei appena
-    // programmati sono tutti nel futuro, quindi non devono comparire.
+    // getPendingFollowups only picks up the ones already due: the six just
+    // scheduled are all in the future, so they must not show up.
     const prima = await getPendingFollowups();
     assert.ok(!prima.some((f: any) => f.phone === TEL),
         'un sollecito futuro e stato dato per scaduto');
 
-    // Ne porto uno nel passato e deve comparire, con i campi della sessione
-    // uniti dalla JOIN.
+    // Move one into the past and it must show up, with the session's fields
+    // merged in by the JOIN.
     await pool.query(
         "UPDATE wa_lead_followups SET scheduled_at = NOW() - INTERVAL '1 hour' WHERE phone=$1 AND cancelled=false AND sent=false",
         [TEL]
@@ -317,7 +320,7 @@ async function testSolleciti() {
     assert.equal(mio.user_name, 'Marco', 'la JOIN con wa_sessions non porta il nome');
     assert.equal(mio.sector, 'ristorazione');
 
-    // E una volta segnato come inviato deve sparire.
+    // And once marked as sent it must disappear.
     await markFollowupSent(mio.id);
     const finale = await getPendingFollowups();
     assert.ok(!finale.some((f: any) => f.id === mio.id), 'un sollecito inviato torna fra i pendenti');
@@ -333,8 +336,8 @@ async function testAnnullaSolleciti() {
 }
 
 async function testLookupSenzaConfigurazione() {
-    // Senza SCALA_DB_URL la funzione non deve tentare nessuna connessione:
-    // deve dire di no e basta. E il caso di chiunque cloni il repo.
+    // Without SCALA_DB_URL the function must not attempt any connection: it
+    // must just say no. This is the case for anyone who clones the repo.
     const originale = process.env.SCALA_DB_URL;
     delete process.env.SCALA_DB_URL;
     try {

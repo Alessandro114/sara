@@ -1,20 +1,20 @@
 // ═══════════════════════════════════════════════════
-// ai-providers — la catena di failover e l'anonimizzazione — node:assert
+// ai-providers — the failover chain and anonymization — node:assert
 // Run: npx tsx src/__tests__/ai-providers-chain.test.ts
 //
-// Due proprieta, e sono tutte e due promesse fatte per iscritto nel README.
+// Two properties, and both are promises made in writing in the README.
 //
 // 1. «Multi-provider LLM chain with automatic failover — zero downtime when one
-//    provider is rate-limited». Se il failover non scatta, SARA si spegne
-//    appena il primo provider risponde 429, che e cio che fanno i piani
-//    gratuiti sotto carico.
+//    provider is rate-limited». If failover doesn't kick in, SARA shuts down
+//    as soon as the first provider returns a 429, which is what free plans
+//    do under load.
 //
 // 2. «PII anonymization before every external LLM call — names, phones, emails
-//    are masked at the boundary». Se salta, i numeri di telefono dei clienti
-//    finiscono nei log di Groq. Nessuno l'aveva mai verificata.
+//    are masked at the boundary». If this breaks, customers' phone numbers
+//    end up in Groq's logs. Nobody had ever verified it.
 //
-// Le chiavi vengono lette all'import del modulo, quindi l'ambiente si prepara
-// PRIMA di importarlo e il modulo si carica una volta sola.
+// The keys are read at module import time, so the environment is set up
+// BEFORE importing the module, and the module is loaded only once.
 // ═══════════════════════════════════════════════════
 
 import assert from 'node:assert/strict';
@@ -27,15 +27,15 @@ process.env.MISTRAL_API_KEY = 'chiave-mistral-di-prova';
 const { chatChain, getProviderStatus, hasGroq, hasCerebras, hasSambaNova, hasMistral } =
     await import('../lib/ai-providers.js');
 
-// ─── finto strato di rete ───
+// ─── fake network layer ───
 
 interface Chiamata { url: string; corpo: string }
 let chiamate: Chiamata[] = [];
 const fetchVero = globalThis.fetch;
 
 /**
- * @param esiti per ogni chiamata in ordine: 'ok' risponde, un numero e uno
- *              stato di errore (429 = rate limit, che e il caso reale).
+ * @param esiti for each call in order: 'ok' responds, a number is an error
+ *              status (429 = rate limit, which is the real-world case).
  */
 function fingiRete(esiti: Array<'ok' | number>, testo = 'risposta del modello') {
     let i = 0;
@@ -64,7 +64,7 @@ function ripristinaRete() {
     chiamate = [];
 }
 
-// ─── chiavi e stato ───
+// ─── keys and status ───
 
 function testChiaviLette() {
     assert.ok(hasGroq(), 'groq non risulta configurato');
@@ -80,8 +80,8 @@ function testStatoProvider() {
         assert.ok(nome in s, `getProviderStatus non riporta ${nome}`);
         assert.equal(typeof s[nome].enabled, 'boolean', `${nome}.enabled non e booleano`);
     }
-    // Non deve MAI esporre le chiavi: questo oggetto finisce in un endpoint di
-    // diagnostica, e una chiave in un log e una chiave bruciata.
+    // Must NEVER expose the keys: this object ends up in a diagnostics
+    // endpoint, and a key in a log is a burned key.
     const serializzato = JSON.stringify(s);
     for (const chiave of ['chiave-groq-di-prova', 'chiave-cerebras-di-prova',
         'chiave-sambanova-di-prova', 'chiave-mistral-di-prova']) {
@@ -102,7 +102,7 @@ async function testPrimoProviderRisponde() {
 }
 
 async function testFailoverSuRateLimit() {
-    // Il caso reale: il piano gratuito di Groq risponde 429 sotto carico.
+    // The real-world case: Groq's free plan returns 429 under load.
     fingiRete([429, 'ok'], 'risposta dal secondo');
     const r = await chatChain([{ role: 'user', content: 'ciao' }]);
     assert.equal(r.text, 'risposta dal secondo');
@@ -113,8 +113,8 @@ async function testFailoverSuRateLimit() {
 }
 
 async function testFailoverACascata() {
-    // Tre provider giu di fila: deve arrivare al quarto, non fermarsi al primo
-    // errore ne dopo un solo tentativo.
+    // Three providers down in a row: it must reach the fourth, not stop at
+    // the first error nor after a single attempt.
     fingiRete([429, 500, 503, 'ok'], 'risposta dal quarto');
     const r = await chatChain([{ role: 'user', content: 'ciao' }]);
     assert.equal(r.text, 'risposta dal quarto');
@@ -130,8 +130,8 @@ async function testTuttiGiu() {
     catch (err) {
         sollevato = true;
         const m = (err as Error).message;
-        // Il messaggio deve dire QUALI provider hanno fallito: senza, chi
-        // guarda i log non sa se e un guasto o un rate limit.
+        // The message must say WHICH providers failed: without that, anyone
+        // looking at the logs can't tell whether it's an outage or a rate limit.
         assert.match(m, /all providers failed/i);
         for (const p of ['groq', 'cerebras', 'sambanova', 'mistral']) {
             assert.ok(m.includes(p), `il messaggio d'errore non nomina ${p}`);
@@ -142,7 +142,7 @@ async function testTuttiGiu() {
     console.log('✅ testTuttiGiu: solleva nominando tutti e quattro i provider falliti');
 }
 
-// ─── anonimizzazione ───
+// ─── anonymization ───
 
 async function testTelefonoNonEsceMai() {
     fingiRete(['ok'], 'ricevuto');
@@ -168,8 +168,9 @@ async function testEmailNonEsceMai() {
 }
 
 async function testAnonimizzaAnchePrimaDelFailover() {
-    // Il caso che sfugge: se l'anonimizzazione avvenisse dentro il ramo del
-    // primo provider, la seconda chiamata partirebbe con i dati in chiaro.
+    // The case that's easy to miss: if anonymization happened inside the
+    // first provider's branch, the second call would go out with the raw
+    // data.
     fingiRete([429, 'ok'], 'ricevuto');
     await chatChain([{ role: 'user', content: 'chiamami al +39 333 1234567' }]);
     assert.ok(chiamate.length >= 2, 'non c e stato failover, il caso non e coperto');
@@ -182,13 +183,13 @@ async function testAnonimizzaAnchePrimaDelFailover() {
 }
 
 async function testDeanonimizzaAlRitorno() {
-    // Il segnaposto deve tornare a essere il dato vero PRIMA di arrivare
-    // all'utente, altrimenti il cliente legge "[TEL_1]" al posto del numero.
+    // The placeholder must turn back into the real data BEFORE reaching the
+    // user, otherwise the customer reads "[TEL_1]" instead of the number.
     //
-    // Il segnaposto si CHIEDE all'anonimizzatore invece di scriverlo a mano:
-    // scrivendolo la prima volta avevo inventato "[PHONE_1]" e il test
-    // falliva accusando il codice di un difetto che non aveva. Un test che
-    // cabla il formato di un altro modulo mente appena quel formato cambia.
+    // The placeholder is ASKED FROM the anonymizer instead of hardcoded:
+    // hardcoding it the first time, I had invented "[PHONE_1]" and the test
+    // failed, blaming the code for a defect it didn't have. A test that
+    // hardcodes another module's format lies as soon as that format changes.
     const { anonymizePII } = await import('../lib/pii-anonymizer.js');
     const numero = '+39 333 1234567';
     const segnaposto = [...anonymizePII(`chiamami al ${numero}`).originals.keys()][0];

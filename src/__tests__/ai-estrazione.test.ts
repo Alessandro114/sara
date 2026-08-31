@@ -1,18 +1,19 @@
 // ═══════════════════════════════════════════════════
-// ai.ts — estrazione dei lead e valutazione del recupero — node:assert
+// ai.ts — lead extraction and retrieval evaluation — node:assert
 // Run: npx tsx src/__tests__/ai-estrazione.test.ts
 //
-// 1.248 righe, nessun test. Qui si coprono le due funzioni pure, che sono
-// anche quelle in cui un errore non si vede: nessuna delle due solleva mai.
+// 1,248 lines, no tests. This covers the two pure functions, which are also
+// the ones where an error doesn't show: neither of them ever throws.
 //
-// extractLeadInfo sbaglia in silenzio in due direzioni opposte, ed entrambe
-// costano: se non riconosce un nome si perde l'attribuzione del lead; se lo
-// riconosce dove non c'e, il CRM si riempie di contatti che si chiamano
-// "Avvocato" o "Nel".
+// extractLeadInfo fails silently in two opposite directions, and both cost
+// something: if it fails to recognize a name, the lead's attribution is
+// lost; if it recognizes one where there isn't one, the CRM fills up with
+// contacts named "Avvocato" (Lawyer) or "Nel" (In the).
 //
-// evaluateRetrieval decide se il RAG ha trovato qualcosa di buono. Se dice
-// 'correct' quando non lo e, SARA risponde con sicurezza usando un documento
-// che non c'entra — che e il modo peggiore di sbagliare per un assistente.
+// evaluateRetrieval decides whether the RAG found something good. If it
+// says 'correct' when it isn't, SARA answers confidently using a document
+// that has nothing to do with the question — which is the worst way an
+// assistant can be wrong.
 // ═══════════════════════════════════════════════════
 
 import assert from 'node:assert/strict';
@@ -35,10 +36,11 @@ function testNomiRiconosciuti() {
 }
 
 function testSonoEscluso() {
-    // "sono" NON deve produrre un nome, ed e una scelta deliberata: il commento
-    // nel codice spiega che causava falsi positivi. Questo test protegge la
-    // decisione — senza, il primo che vede "Sono Mario Rossi" non riconosciuto
-    // lo aggiunge al pattern e ricrea il problema.
+    // "sono" must NOT produce a name, and this is a deliberate choice: the
+    // comment in the code explains it caused false positives. This test
+    // protects that decision — without it, the first person to see "Sono
+    // Mario Rossi" go unrecognized will add it to the pattern and recreate
+    // the problem.
     const trappole = [
         'sono avvocato',
         'sono nel team di Marco',
@@ -55,9 +57,9 @@ function testSonoEscluso() {
 }
 
 function testNomeMassimoDueParole() {
-    // Il pattern prende al massimo nome e cognome: se prendesse tutto il resto
-    // della frase, nel CRM finirebbero contatti chiamati "Mario Rossi E Vorrei
-    // Sapere Se".
+    // The pattern takes at most a first and last name: if it took the rest
+    // of the sentence too, the CRM would end up with contacts named "Mario
+    // Rossi And I'd Like To Know If".
     const r = extractLeadInfo('mi chiamo Mario Rossi e vorrei sapere i prezzi');
     assert.ok(r.name, 'nessun nome estratto');
     assert.ok(r.name!.split(/\s+/).length <= 2, `nome troppo lungo: "${r.name}"`);
@@ -80,7 +82,7 @@ function testEmail() {
 }
 
 function testCampiIndipendenti() {
-    // Un messaggio che ha solo l'email non deve inventare nome e azienda.
+    // A message that only has the email must not invent a name and company.
     const r = extractLeadInfo('mario@acme.it');
     assert.equal(r.email, 'mario@acme.it');
     assert.equal(r.name, undefined);
@@ -115,9 +117,9 @@ function testPunteggioAltoConParolaChiave() {
 }
 
 function testPunteggioAltoSenzaParolaChiave() {
-    // Il caso che conta: somiglianza alta ma su un argomento diverso. NON deve
-    // essere 'correct', altrimenti SARA risponde con sicurezza usando un
-    // documento che non c'entra.
+    // The case that matters: high similarity but on a different topic. It
+    // must NOT be 'correct', otherwise SARA answers confidently using a
+    // document that has nothing to do with the question.
     const r = evaluateRetrieval([doc(0.9, 'Regolamento parcheggio', 'sbarre e telecomandi')],
         'quali allergeni contiene la carbonara', 'dine');
     assert.notEqual(r.verdict, 'correct',
@@ -140,8 +142,8 @@ function testZonaAmbigua() {
 }
 
 function testParoleVuoteIgnorate() {
-    // "come", "cosa", "posso" e simili non devono far scattare una
-    // corrispondenza: sono in ogni domanda e in mezzo documento.
+    // "how", "what", "can" and similar words must not trigger a match: they
+    // appear in every question and in half of every document.
     const r = evaluateRetrieval([doc(0.5, 'Come posso aiutarti', 'cosa vorrei sapere')],
         'come posso fare', 'dine');
     assert.notEqual(r.verdict, 'correct',
@@ -150,8 +152,8 @@ function testParoleVuoteIgnorate() {
 }
 
 function testMotivazioneSemprePresente() {
-    // La motivazione finisce nei log: senza, un verdetto sbagliato non si
-    // riesce a spiegare a posteriori.
+    // The reason ends up in the logs: without it, a wrong verdict can't be
+    // explained after the fact.
     for (const punteggio of [0.05, 0.45, 0.9]) {
         const r = evaluateRetrieval([doc(punteggio)], 'quali sono gli orari', 'dine');
         assert.ok(r.reason && r.reason.length > 0, `verdetto senza motivazione a ${punteggio}`);
