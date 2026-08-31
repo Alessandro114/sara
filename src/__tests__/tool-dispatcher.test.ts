@@ -2,23 +2,24 @@
 // tool-dispatcher — vanilla node:assert
 // Run: npx tsx src/__tests__/tool-dispatcher.test.ts
 //
-// 1.419 righe senza un test. E il modulo che decide QUALE strumento eseguire
-// quando il modello lo chiede: un errore qui non solleva un'eccezione, fa fare
-// a SARA la cosa sbagliata col cliente.
+// 1,419 lines without a single test. This is the module that decides WHICH
+// tool to run when the model asks for one: an error here doesn't throw an
+// exception, it makes SARA do the wrong thing with the customer.
 //
-// Il primo test scritto ha trovato un difetto vero: normalizeDate usava
-// toISOString(), che converte in UTC. Su una macchina a fuso positivo, fra
-// mezzanotte e l'offset, "oggi" restituiva IERI e "domani" restituiva OGGI.
-// Un tavolo prenotato all'una di notte per domani finiva sul giorno sbagliato,
-// senza nessun errore. In produzione il server e su UTC e non si vedeva; ma
-// questo repository e pubblico e auto-ospitabile, e chi lo installa in Italia
-// lo prende in pieno ogni notte.
+// The first test written found a real defect: normalizeDate used
+// toISOString(), which converts to UTC. On a machine in a positive time
+// zone, between midnight and the offset, "today" would return YESTERDAY and
+// "tomorrow" would return TODAY. A table booked at 1am for tomorrow would
+// end up on the wrong day, with no error at all. In production the server
+// runs on UTC so it never showed up; but this repository is public and
+// self-hostable, and anyone who installs it in Italy hits it head-on every
+// night.
 // ═══════════════════════════════════════════════════
 
 import assert from 'node:assert/strict';
 import { normalizeDate, getToolRisk, saraToolsToOpenAI } from '../lib/tool-dispatcher.js';
 
-/** YYYY-MM-DD nel fuso locale, che e cio che il bot deve scrivere nel database. */
+/** YYYY-MM-DD in the local time zone, which is what the bot must write to the database. */
 function locale(offsetGiorni = 0): string {
     const d = new Date();
     d.setDate(d.getDate() + offsetGiorni);
@@ -49,14 +50,14 @@ function testDopodomani() {
 }
 
 function testFusoOrario() {
-    // Il difetto trovato scrivendo questi test: con toISOString() la data
-    // veniva calcolata in UTC. Questo controllo lo prende su qualsiasi fuso,
-    // perche confronta con i componenti LOCALI della data.
+    // The defect found while writing these tests: with toISOString() the
+    // date was being computed in UTC. This check catches it in any time
+    // zone, because it compares against the LOCAL components of the date.
     const d = new Date();
     const atteso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     assert.equal(normalizeDate('oggi'), atteso,
         `"oggi" deve essere la data LOCALE (offset fuso: ${d.getTimezoneOffset()} min), non quella UTC`);
-    // e domani deve essere esattamente un giorno dopo, non zero e non due
+    // and tomorrow must be exactly one day later, not zero and not two
     const o = new Date(normalizeDate('oggi') + 'T12:00:00');
     const dom = new Date(normalizeDate('domani') + 'T12:00:00');
     assert.equal(Math.round((dom.getTime() - o.getTime()) / 86_400_000), 1,
@@ -73,16 +74,16 @@ function testGiorniDellaSettimana() {
         assert.match(r, /^\d{4}-\d{2}-\d{2}$/, `"${g}" non produce una data`);
         const d = new Date(r + 'T12:00:00');
         const scarto = Math.round((d.getTime() - new Date(locale(0) + 'T12:00:00').getTime()) / 86_400_000);
-        // Sempre in avanti, mai oggi: "lunedi" detto di lunedi vuol dire il
-        // lunedi prossimo, non adesso.
+        // Always forward, never today: "monday" said on a monday means next
+        // monday, not now.
         assert.ok(scarto >= 1 && scarto <= 7, `"${g}" cade a ${scarto} giorni da oggi`);
     }
     console.log(`✅ testGiorniDellaSettimana: 14 forme, tutte fra 1 e 7 giorni avanti (oggi e ${oggi.getDay()})`);
 }
 
 function testAccenti() {
-    // Il modello scrive "lunedì" con l'accento: se non venisse normalizzato
-    // cadrebbe nel ramo del parsing generico e produrrebbe una data a caso.
+    // The model writes "lunedì" with the accent: if it weren't normalized
+    // it would fall into the generic parsing branch and produce a random date.
     for (const [con, senza] of [['lunedì', 'lunedi'], ['martedì', 'martedi'], ['venerdì', 'venerdi']]) {
         assert.equal(normalizeDate(con), normalizeDate(senza), `"${con}" e "${senza}" devono coincidere`);
     }
@@ -97,8 +98,8 @@ function testGiaIso() {
 }
 
 function testNonRiconosciuto() {
-    // Deve restituire l'input, non sollevare: meglio che il database rifiuti
-    // un valore strano che far cadere la conversazione col cliente.
+    // Must return the input, not throw: better for the database to reject a
+    // strange value than to crash the conversation with the customer.
     for (const spazzatura of ['', 'quando vuoi', 'asdfgh', 'il mese prossimo']) {
         assert.doesNotThrow(() => normalizeDate(spazzatura), `"${spazzatura}" fa cadere il normalizzatore`);
     }
@@ -110,10 +111,10 @@ function testNonRiconosciuto() {
 // ─── getToolRisk ───
 
 function testRischioPredefinito() {
-    // Il livello di rischio governa l'autonomia: uno strumento sconosciuto
-    // DEVE ricadere su un valore prudente, mai su 'low'. Se un domani qualcuno
-    // aggiunge uno strumento e dimentica di classificarlo, non deve diventare
-    // eseguibile in automatico per omissione.
+    // The risk level governs autonomy: an unknown tool MUST fall back to a
+    // cautious value, never to 'low'. If someone later adds a tool and
+    // forgets to classify it, it must not become auto-executable by
+    // omission.
     assert.equal(getToolRisk('strumento_mai_visto'), 'medium');
     assert.notEqual(getToolRisk('strumento_mai_visto'), 'low');
     console.log('✅ testRischioPredefinito: uno strumento non classificato e "medium", non "low"');
@@ -143,8 +144,8 @@ function testConversioneSchema() {
 }
 
 function testParametriFacoltativi() {
-    // notes, category e compagnia non devono MAI finire fra i required:
-    // se ci finissero, il modello inventerebbe un valore pur di riempirli.
+    // notes, category and friends must NEVER end up among the required
+    // fields: if they did, the model would invent a value just to fill them.
     const facoltativi = ['notes', 'category', 'area', 'sector', 'trade_in', 'complexity', 'budget_range', 'color'];
     for (const settore of ['dine', 'beauty', 'property']) {
         for (const t of saraToolsToOpenAI(settore)) {

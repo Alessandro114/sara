@@ -249,9 +249,9 @@ export async function initDB() {
             console.error('[DB] The pgvector extension is missing. Use the pgvector/pgvector image, or install it as a superuser.');
         }
         throw err;
-        // (qui sotto c'era un console.log rimasto dopo il throw: irraggiungibile,
-        //  e diceva "Bot will continue with existing schema" — cioe' esattamente
-        //  il contrario di quello che il throw fa. Rimosso.)
+        // (there used to be a console.log left after the throw here:
+        //  unreachable, and it said "Bot will continue with existing schema" —
+        //  i.e. exactly the opposite of what the throw does. Removed.)
     }
 }
 
@@ -347,13 +347,13 @@ export async function updateLeadScore(phone: string, delta: number) {
     // Auto-update lead stage based on score
     const session = await getSession(phone);
     if (!session) return;
-    // NIENTE "+ delta" qui: getSession gira DOPO l'UPDATE qui sopra, quindi
-    // session.lead_score contiene gia il delta. Sommarlo di nuovo faceva
-    // calcolare lo stadio sul DOPPIO del punteggio vero, e le due soglie
-    // scattavano a meta: 'engaged' a 10 punti invece di 20, 'qualified' a 25
-    // invece di 50 — con la sincronizzazione al CRM che partiva di
-    // conseguenza. Il punteggio salvato in tabella era giusto: sbagliato era
-    // solo lo stadio, che e proprio il campo su cui si decide chi contattare.
+    // NO "+ delta" here: getSession runs AFTER the UPDATE above, so
+    // session.lead_score already contains the delta. Adding it again used to
+    // make the stage get computed on DOUBLE the real score, so the two
+    // thresholds fired at half value: 'engaged' at 10 points instead of 20,
+    // 'qualified' at 25 instead of 50 — with the CRM sync firing accordingly.
+    // The score saved in the table was correct: what was wrong was only the
+    // stage, which is precisely the field that decides who gets contacted.
     const score = session.lead_score || 0;
     let stage = 'new';
     if (score >= 50) stage = 'qualified';

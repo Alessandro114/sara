@@ -108,8 +108,8 @@ api.get('/api/sara/qr', async (_req, reply) => {
         return reply.type('text/html').send(`
             <html><body style="background:#0A0F2C;color:#C9A84C;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column">
             <h1>S.A.R.A. WhatsApp Bot</h1>
-            <p style="color:#888">Nessun QR code disponibile. Il bot potrebbe essere già connesso o in fase di avvio.</p>
-            <p style="color:#666;font-size:0.8em">Ricarica tra qualche secondo...</p>
+            <p style="color:#888">No QR code available. The bot may already be connected or starting up.</p>
+            <p style="color:#666;font-size:0.8em">Reload in a few seconds...</p>
             <script>setTimeout(() => location.reload(), 5000)</script>
             </body></html>`);
     }
@@ -118,9 +118,9 @@ api.get('/api/sara/qr', async (_req, reply) => {
 <html><head><meta charset="UTF-8"><title>S.A.R.A. QR Code</title></head>
 <body style="background:#0A0F2C;color:#C9A84C;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column">
 <h1>S.A.R.A. - Scan QR Code</h1>
-<p style="color:#888">Scansiona con WhatsApp Business &gt; Dispositivi collegati &gt; Collega dispositivo</p>
+<p style="color:#888">Scan with WhatsApp Business &gt; Linked devices &gt; Link a device</p>
 <img src="${qrDataUrl}" style="margin:20px;border-radius:12px;width:400px;height:400px" alt="QR Code"/>
-<p style="color:#666;font-size:0.8em">Auto-refresh ogni 30 secondi</p>
+<p style="color:#666;font-size:0.8em">Auto-refresh every 30 seconds</p>
 <script>setTimeout(function(){ location.reload(); }, 30000);</script>
 </body></html>`);
 });
