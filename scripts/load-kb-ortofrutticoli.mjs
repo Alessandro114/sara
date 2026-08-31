@@ -15,7 +15,7 @@ const SECTOR = 'ortofrutticolo';
 
 const KB = [
   // ═══════════════════════════════════════════════════
-  // ITALIANO — 15 documenti
+  // ITALIANO — 15 documents
   // ═══════════════════════════════════════════════════
   { t: 'Catalogo prodotti ortofrutticoli', q: 'Che prodotti vendete?',
     a: `Offriamo una gamma completa di prodotti ortofrutticoli B2B: frutta fresca di stagione (agrumi, mele, pere, pesche, uva, kiwi, fragole), verdura fresca (insalate, pomodori, zucchine, melanzane, peperoni, carote, patate, cipolle), frutta esotica (avocado, mango, papaya, ananas, lime, passion fruit), IV gamma (insalate lavate e pronte, verdure tagliate, mix pronti), V gamma (verdure cotte sottovuoto), prodotti biologici certificati, erbe aromatiche fresche (basilico, prezzemolo, rosmarino, salvia). Consegna quotidiana con catena del freddo garantita.` },
@@ -63,7 +63,7 @@ const KB = [
     a: `Impegno sostenibilità: casse riutilizzabili IFCO/Euro Pool System (circuito chiuso, lavaggio e sanificazione certificata), riduzione plastica monouso del 60%, film compostabili per IV gamma, cartone FSC per export. Prodotti KM0 e filiera corta quando disponibili. Certificazione Carbon Footprint in corso. Collaborazione con banchi alimentari per invenduto ancora commestibile. Report sostenibilità annuale disponibile per clienti GDO.` },
 
   // ═══════════════════════════════════════════════════
-  // ENGLISH — 10 documenti
+  // ENGLISH — 10 documents
   // ═══════════════════════════════════════════════════
   { t: 'Product catalogue — fresh produce B2B', q: 'What products do you sell?',
     a: `We offer a full range of B2B fresh produce: seasonal fruit (citrus, apples, pears, stone fruit, grapes, kiwi, strawberries), fresh vegetables (lettuce, tomatoes, courgettes, aubergines, peppers, carrots, potatoes, onions), exotic fruit (avocado, mango, papaya, pineapple, lime, passion fruit), ready-to-eat (washed salads, cut vegetables, stir-fry mixes), cooked vacuum-packed vegetables, certified organic produce, fresh herbs (basil, parsley, rosemary, sage). Daily delivery with guaranteed cold chain.` },
@@ -96,7 +96,7 @@ const KB = [
     a: `Yes, dedicated HoReCa line: ready-to-cook cut vegetables (julienne, brunoise, chiffonade), fresh herbs in pots, micro-greens and sprouts, edible flowers, finger lime, ornamental citrus, cocktail bar fruit (limes, lemons, berries). Dedicated packs: small crates 3-5 kg for restaurants, delivery up to 6 days a week. Seasonal menu consulting on request. Free samples for new products.` },
 
   // ═══════════════════════════════════════════════════
-  // ESPAÑOL — 8 documenti
+  // ESPAÑOL — 8 documents
   // ═══════════════════════════════════════════════════
   { t: 'Catálogo de productos hortofrutícolas', q: '¿Qué productos venden?',
     a: `Ofrecemos una gama completa de productos hortofrutícolas B2B: fruta fresca de temporada (cítricos, manzanas, peras, melocotones, uva, kiwi, fresas), verdura fresca (lechugas, tomates, calabacines, berenjenas, pimientos, zanahorias, patatas, cebollas), fruta exótica (aguacate, mango, papaya, piña, lima, maracuyá), IV gama (ensaladas lavadas listas para consumir, verduras cortadas, mezclas preparadas), V gama (verduras cocidas al vacío), productos ecológicos certificados, hierbas aromáticas frescas. Entrega diaria con cadena de frío garantizada.` },
@@ -123,7 +123,7 @@ const KB = [
     a: `Reclamaciones de calidad dentro de las 24 horas desde la entrega con fotos del producto y albarán. Verificación inmediata por nuestro departamento de calidad. Si la reclamación es válida: nota de crédito o sustitución del producto en la siguiente entrega. Devoluciones por mercancía no conforme: recogida a nuestro cargo. No aceptamos devoluciones por errores de pedido del cliente pasadas 2 horas desde la entrega.` },
 
   // ═══════════════════════════════════════════════════
-  // PORTUGUÊS — 6 documenti
+  // PORTUGUÊS — 6 documents
   // ═══════════════════════════════════════════════════
   { t: 'Catálogo de produtos hortifrutícolas', q: 'Que produtos vocês vendem?',
     a: `Oferecemos uma gama completa de produtos hortifrutícolas B2B: frutas frescas da estação (cítricos, maçãs, peras, pêssegos, uvas, kiwi, morangos), verduras e legumes frescos (alfaces, tomates, abobrinhas, berinjelas, pimentões, cenouras, batatas, cebolas), frutas exóticas (abacate, manga, mamão, abacaxi, limão, maracujá), IV gama (saladas lavadas prontas para consumo, vegetais cortados, misturas prontas), V gama (vegetais cozidos a vácuo), produtos orgânicos certificados, ervas aromáticas frescas. Entrega diária com cadeia de frio garantida.` },
@@ -144,7 +144,7 @@ const KB = [
     a: `A disponibilidade varia por estação. Primavera: morangos, cerejas, damascos. Verão: pêssegos, melões, melancias, ameixas, figos, uvas. Outono: maçãs, peras, caquis, romãs, castanhas. Inverno: cítricos (laranjas, tangerinas, limões, toranjas), kiwi, maçãs, peras. O ano todo: bananas, maçãs, limões, abacaxi. Frutas exóticas disponíveis o ano todo por importação direta. Lista de preços atualizada semanalmente conforme o mercado.` },
 
   // ═══════════════════════════════════════════════════
-  // DEUTSCH — 6 documenti
+  // DEUTSCH — 6 documents
   // ═══════════════════════════════════════════════════
   { t: 'Produktkatalog — Obst und Gemüse Großhandel', q: 'Welche Produkte verkaufen Sie?',
     a: `Wir bieten ein vollständiges B2B-Sortiment an Obst und Gemüse: saisonales Frischobst (Zitrusfrüchte, Äpfel, Birnen, Pfirsiche, Trauben, Kiwi, Erdbeeren), frisches Gemüse (Salate, Tomaten, Zucchini, Auberginen, Paprika, Karotten, Kartoffeln, Zwiebeln), exotische Früchte (Avocado, Mango, Papaya, Ananas, Limette, Passionsfrucht), Convenience-Produkte (gewaschene Salate, geschnittenes Gemüse, fertige Mischungen), vakuumgegartes Gemüse, zertifizierte Bio-Produkte, frische Kräuter (Basilikum, Petersilie, Rosmarin, Salbei). Tägliche Lieferung mit garantierter Kühlkette.` },

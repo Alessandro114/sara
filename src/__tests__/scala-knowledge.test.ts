@@ -1,21 +1,22 @@
 // ═══════════════════════════════════════════════════
-// scala-knowledge — quando SARA parla del PRODOTTO — node:assert
+// scala-knowledge — when SARA talks about the PRODUCT — node:assert
 // Run: npx tsx src/__tests__/scala-knowledge.test.ts
 //
-// 788 righe, nessun test. E il modulo che decide quando iniettare nel contesto
-// del modello il listino e la documentazione della piattaforma SCALA.
+// 788 lines, no tests. This is the module that decides when to inject the
+// platform's price list and documentation into the model's context.
 //
-// Sbagliare qui costa in modo asimmetrico:
+// Getting this wrong is asymmetrically costly:
 //
-//   falso positivo  il cliente di un ristorante prenota la cena e si trova il
-//                   listino degli abbonamenti nel contesto. Il modello viene
-//                   invitato a parlargli di 97 euro al mese, e 26 righe di
-//                   contesto vengono sprecate a ogni messaggio.
-//   falso negativo  chi chiede davvero il prezzo non lo riceve.
+//   false positive  a restaurant customer books a table for dinner and ends
+//                    up with the subscription price list in the context. The
+//                    model is prompted to talk to them about 97 euros a
+//                    month, and 26 lines of context are wasted on every
+//                    message.
+//   false negative  someone who genuinely asks about the price doesn't get it.
 //
-// I test qui sotto sono nati da falsi positivi VERI, misurati: un numero di
-// telefono, "quanto tempo ci vuole", "siamo al piano terra", "il vino costa
-// 25€" facevano tutti scattare il listino.
+// The tests below came from REAL false positives, actually measured: a
+// phone number, "how long does it take", "we're on the ground floor", "the
+// wine costs 25€" all used to trigger the price list.
 // ═══════════════════════════════════════════════════
 
 import assert from 'node:assert/strict';
@@ -23,12 +24,12 @@ import { buildKnowledgeContext, isScalaPlatformQuery } from '../scala-knowledge.
 
 const iniettaListino = (q: string, lang = 'it') => buildKnowledgeContext(q, lang).includes('€97');
 
-// ─── i falsi positivi che c'erano davvero ───
+// ─── the false positives that really happened ───
 
 function testTelefonoNonInietta() {
-    // '49', '149' e '298' erano nell'elenco come NUMERI NUDI, cercati come
-    // sottostringa: un numero di telefono contiene quasi sempre "49".
-    // Erano anche obsoleti — i prezzi veri sono 97, 197, 970, 1970.
+    // '49', '149' and '298' were in the list as BARE NUMBERS, searched as a
+    // substring: a phone number almost always contains "49".
+    // They were also outdated — the real prices are 97, 197, 970, 1970.
     for (const m of ['il mio numero e +39 349 1234567', 'chiamami al 3491234567', 'sono le 14:9']) {
         assert.ok(!iniettaListino(m), `"${m}" fa iniettare il listino`);
     }
@@ -50,15 +51,15 @@ function testPianoDaSoloNonInietta() {
 }
 
 function testPrezzoDelRistoranteNonInietta() {
-    // Un ristorante che parla dei PROPRI prezzi non sta chiedendo quelli della
-    // piattaforma. Il simbolo € da solo non basta.
+    // A restaurant talking about ITS OWN prices isn't asking about the
+    // platform's. The € symbol alone isn't enough.
     for (const m of ['il vino costa 25€', 'il menu fisso e 30€', 'un tavolo vista costa']) {
         assert.ok(!iniettaListino(m), `"${m}" fa iniettare il listino della piattaforma`);
     }
     console.log('✅ testPrezzoDelRistoranteNonInietta: i prezzi del locale non evocano quelli di SCALA');
 }
 
-// ─── e i veri positivi, che devono continuare a funzionare ───
+// ─── and the true positives, which must keep working ───
 
 function testDomandeVereSuiPrezzi() {
     const vere = ['quanto costa SCALA', 'quali sono i vostri prezzi', 'pricing',
@@ -71,8 +72,8 @@ function testDomandeVereSuiPrezzi() {
 }
 
 function testListinoNellaLinguaGiusta() {
-    // Il listino esiste in quattro lingue: se la selezione sbaglia, il cliente
-    // riceve i prezzi in una lingua che non parla.
+    // The price list exists in four languages: if the selection picks the
+    // wrong one, the customer receives prices in a language they don't speak.
     for (const [lang, spia] of [['it', 'Crediti'], ['en', 'Credits'], ['es', 'Creditos'], ['pt', 'Creditos']] as const) {
         const c = buildKnowledgeContext('quanto costa SCALA', lang);
         assert.ok(c.length > 0, `nessun contesto per lingua ${lang}`);
@@ -83,13 +84,13 @@ function testListinoNellaLinguaGiusta() {
 }
 
 function testPrezziCoerentiFraLingue() {
-    // I quattro listini devono quotare gli STESSI importi: se una traduzione
-    // resta indietro, SARA dice un prezzo diverso a seconda della lingua del
-    // cliente. E il difetto piu difficile da accorgersene, perche ognuno dei
-    // quattro testi letto da solo sembra giusto.
+    // The four price lists must quote the SAME amounts: if one translation
+    // falls behind, SARA quotes a different price depending on the
+    // customer's language. It's the hardest defect to notice, because each
+    // of the four texts reads correctly on its own.
     const importi = (lang: string) => {
         const c = buildKnowledgeContext('quanto costa SCALA', lang);
-        // normalizza il separatore decimale: 9,90 e 9.90 sono lo stesso prezzo
+        // normalize the decimal separator: 9,90 and 9.90 are the same price
         return [...c.matchAll(/€\s?([\d.,]+)/g)]
             .map(m => m[1].replace(/\.(?=\d{3}\b)/g, '').replace(',', '.'))
             .sort();
@@ -105,8 +106,8 @@ function testPrezziCoerentiFraLingue() {
 // ─── isScalaPlatformQuery ───
 
 function testSegnaliCortiNonDentroLeParole() {
-    // 'free', 'cost', 'trial' venivano cercati come sottostringa e vivevano
-    // dentro parole comuni: freelance, costume, indus-TRIAL-e.
+    // 'free', 'cost', 'trial' were being searched as substrings and lived
+    // inside common words: freelance, costume, indus-TRIAL.
     const trappole = ['sono un freelance', 'vorrei un costume da bagno',
         'lavoro nel settore industriale', 'il vino e costoso'];
     for (const m of trappole) {
@@ -134,8 +135,8 @@ function testConversazioneNormaleNonAttiva() {
 }
 
 function testNessunContestoSenzaMotivo() {
-    // Se non c'e niente da dire, non deve restituire un involucro vuoto: quello
-    // occuperebbe contesto senza portare informazione.
+    // If there's nothing to say, it must not return an empty wrapper: that
+    // would take up context without carrying any information.
     assert.equal(buildKnowledgeContext('vorrei prenotare per due', 'it'), '');
     console.log('✅ testNessunContestoSenzaMotivo: contesto vuoto, non un involucro vuoto');
 }

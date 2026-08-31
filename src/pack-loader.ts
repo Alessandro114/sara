@@ -1,39 +1,39 @@
 /**
- * Caricamento dei pacchetti verticali.
+ * Loading of vertical packs.
  *
- * ── Cos'e un pacchetto ─────────────────────────────────────────────
- * Un file JSON. Niente altro:
+ * ── What a pack is ─────────────────────────────────────────────────
+ * A JSON file. Nothing else:
  *
  *   {
  *     "vertical": "dine",
  *     "prompts": { "it": "...", "en": "...", "es": "...", "pt": "..." }
  *   }
  *
- * Scriverne uno per il proprio settore e mettere il file in una cartella. Non
- * serve toccare il motore, non serve ricompilare, non serve un plugin.
+ * Write one for your own sector and drop the file in a folder. No need to
+ * touch the engine, no need to recompile, no need for a plugin.
  *
- * ── Dove li cerca ──────────────────────────────────────────────────
- *   1. `packs/` accanto al codice — i pacchetti inclusi in questo repo
- *   2. la cartella indicata da SARA_VERTICAL_PACKS, se impostata
+ * ── Where it looks for them ──────────────────────────────────────────
+ *   1. `packs/` next to the code — the packs bundled with this repo
+ *   2. the folder pointed to by SARA_VERTICAL_PACKS, if set
  *
- * Chi arriva dopo vince, cosi un pacchetto proprio puo sostituire uno incluso
- * senza modificare il repo.
+ * Whoever arrives last wins, so your own pack can override a bundled one
+ * without modifying the repo.
  *
- * ── Perche i verticali non stanno piu nel codice ───────────────────
- * Stavano in otto costanti dentro due file, 2.349 righe in quattro lingue.
- * Erano il lavoro di dominio — la parte difficile — mentre il motore intorno
- * (adattatore WhatsApp, function calling, failover) e la parte che chiunque
- * puo riscrivere. Tenerli dentro significava regalare la parte difficile e
- * proteggere la commodity: esattamente al contrario.
+ * ── Why verticals no longer live in the code ─────────────────────────
+ * They used to sit in eight constants across two files, 2,349 lines in four
+ * languages. They were the domain work — the hard part — while the engine
+ * around them (WhatsApp adapter, function calling, failover) is the part
+ * anyone can rewrite. Keeping them inside meant giving away the hard part
+ * and protecting the commodity: exactly backwards.
  *
- * Ora il motore e aperto e ne include due, `general` e `dine`. Gli altri sono
- * pacchetti a parte. Chi vuole il proprio settore lo scrive; chi li vuole
- * pronti li trova su get-scala.com.
+ * Now the engine is open and bundles two of them, `general` and `dine`. The
+ * others are separate packs. Whoever wants their own sector writes it;
+ * whoever wants ready-made ones finds them on get-scala.com.
  *
- * ── Se un pacchetto manca ──────────────────────────────────────────
- * Non e un errore: si ricade su `general`, che e sempre presente. Un motore
- * che smette di rispondere perche manca un file di prompt sarebbe peggio di
- * uno che risponde in modo generico.
+ * ── If a pack is missing ──────────────────────────────────────────────
+ * That's not an error: it falls back to `general`, which is always present.
+ * An engine that stops responding because a prompt file is missing would be
+ * worse than one that responds generically.
  */
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
@@ -49,7 +49,7 @@ interface Pacchetto {
 
 const qui = dirname(fileURLToPath(import.meta.url));
 
-/** Le cartelle in cui cercare, nell'ordine in cui vincono. */
+/** The folders to search, in the order in which they win. */
 function cartelle(): string[] {
     const dentro = [join(qui, '..', 'packs'), join(qui, 'packs')];
     const fuori = process.env.SARA_VERTICAL_PACKS
@@ -74,8 +74,9 @@ function carica(tipo: 'vertical' | 'sector'): Record<string, Partial<Record<Ling
                 const chiave = (tipo === 'vertical' ? p.vertical : p.sector) ?? f.slice(tipo.length + 1, -5);
                 if (p.prompts && Object.keys(p.prompts).length > 0) fuori[chiave] = p.prompts;
             } catch (err) {
-                // Un pacchetto scritto male non deve impedire il caricamento degli
-                // altri: si segnala e si prosegue. Chi lo sta scrivendo vede l'errore.
+                // A badly written pack must not block the loading of the
+                // others: it gets logged and we move on. Whoever is writing
+                // it sees the error.
                 console.error(`[packs] ${join(dir, f)} ignorato: ${(err as Error).message}`);
             }
         }
@@ -95,15 +96,15 @@ export function pacchettiSettori() {
     return cacheSettori;
 }
 
-/** Ricarica dal disco. Serve ai test e a chi aggiunge pacchetti a caldo. */
+/** Reloads from disk. Used by tests and by anyone hot-adding packs. */
 export function ricaricaPacchetti(): void {
     cacheVerticali = null;
     cacheSettori = null;
 }
 
 /**
- * Il prompt per una chiave, nella lingua richiesta.
- * Ripiega sulla lingua italiana, poi su `general`. Non lancia mai.
+ * The prompt for a key, in the requested language.
+ * Falls back to Italian, then to `general`. Never throws.
  */
 export function promptDiPacchetto(
     tipo: 'vertical' | 'sector',
@@ -116,7 +117,7 @@ export function promptDiPacchetto(
     return voce[l] ?? voce.it ?? tutti.general?.[l] ?? tutti.general?.it ?? '';
 }
 
-/** Quali pacchetti sono caricati. Usato dal comando di diagnosi e dai test. */
+/** Which packs are loaded. Used by the diagnostics command and by tests. */
 export function elencoPacchetti(): { verticali: string[]; settori: string[]; cartelle: string[] } {
     return {
         verticali: Object.keys(pacchettiVerticali()).sort(),

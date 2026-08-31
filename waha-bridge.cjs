@@ -148,7 +148,7 @@ setInterval(() => {
     if (msgCount1min === 0) alertSent = false;
 }, 60000);
 
-// Incrementa il contatore in handleMessage (hook)
+// Increment the counter in handleMessage (hook)
 const _origHandle = handleMessage;
 handleMessage = async function(...args) {
     msgCount1min++;

@@ -1,14 +1,15 @@
 // ═══════════════════════════════════════════════════
-// persistent-memory — i due blocchi che finiscono nel prompt — node:assert
+// persistent-memory — the two blocks that end up in the prompt — node:assert
 // Run: npx tsx src/__tests__/persistent-memory.test.ts
 //
-// 618 righe, nessun test. Qui si coprono le due funzioni pure, che sono anche
-// le uniche il cui risultato viene consegnato TESTUALMENTE al modello:
-// buildProfileContext (chi e il cliente) e buildKBContext (cosa sa l'azienda).
+// 618 lines, no tests. This covers the two pure functions, which are also
+// the only ones whose output is delivered TEXTUALLY to the model:
+// buildProfileContext (who the customer is) and buildKBContext (what the
+// business knows).
 //
-// Un errore qui non solleva. Produce un blocco di testo leggermente sbagliato
-// che il modello legge come verita, e la conversazione va storta senza che in
-// nessun log compaia niente.
+// An error here doesn't throw. It produces a slightly wrong block of text
+// that the model reads as truth, and the conversation goes sideways without
+// anything showing up in any log.
 // ═══════════════════════════════════════════════════
 
 import assert from 'node:assert/strict';
@@ -33,9 +34,9 @@ const profiloBase = (over: Partial<ContactProfile> = {}): ContactProfile => ({
 // ─── buildProfileContext ───
 
 function testProfiloAssente() {
-    // Deve dare stringa vuota, non un blocco vuoto: un '[CONTACT PROFILE]'
-    // senza contenuto occuperebbe contesto e direbbe al modello che c'e un
-    // profilo, quando non c'e.
+    // Must return an empty string, not an empty block: a '[CONTACT PROFILE]'
+    // with no content would take up context and tell the model there's a
+    // profile when there isn't.
     assert.equal(buildProfileContext(null), '');
     console.log('✅ testProfiloAssente: nessun profilo -> stringa vuota, non un involucro');
 }
@@ -56,8 +57,8 @@ function testNomeMancante() {
 }
 
 function testNessunNullNelPrompt() {
-    // Il caso che conta: un profilo quasi vuoto non deve mai produrre la
-    // parola "null" o "undefined" dentro il testo che legge il modello.
+    // The case that matters: a nearly empty profile must never produce the
+    // word "null" or "undefined" inside the text the model reads.
     const c = buildProfileContext(profiloBase({
         name: null, language: null, sentiment_avg: null, profile_summary: null,
     }));
@@ -67,9 +68,10 @@ function testNessunNullNelPrompt() {
 }
 
 function testTelefonoNonNelProfilo() {
-    // Il blocco finisce nel prompt e da li puo arrivare a un provider esterno.
-    // ContactProfile non porta il numero, ed e giusto cosi: questo test
-    // impedisce che qualcuno lo aggiunga senza accorgersi delle conseguenze.
+    // The block ends up in the prompt and from there can reach an external
+    // provider. ContactProfile doesn't carry the phone number, and rightly
+    // so: this test stops anyone from adding it without noticing the
+    // consequences.
     const c = buildProfileContext(profiloBase({
         name: 'Mario Rossi',
         preferences: { tavolo: 'vicino alla finestra' },
@@ -109,8 +111,8 @@ function testStoricoInGiorni() {
 }
 
 function testStoricoMinimoUnGiorno() {
-    // Primo e ultimo contatto nello stesso momento: deve dire 1 giorno, non 0.
-    // "History: 0 days" al modello suona come "non l'ho mai sentito".
+    // First and last contact at the same moment: it must say 1 day, not 0.
+    // "History: 0 days" reads to the model as "I've never heard from them".
     const adesso = new Date('2026-08-11T10:00:00Z');
     const c = buildProfileContext(profiloBase({ first_contact: adesso, last_contact: adesso }));
     assert.ok(c.includes('History: 1 days'), `atteso almeno 1 giorno, riga: ${c.split('\n').find(r => r.startsWith('History'))}`);
@@ -118,14 +120,14 @@ function testStoricoMinimoUnGiorno() {
 }
 
 function testTopicLimitatiADieci() {
-    // Senza il limite, un cliente con centinaia di argomenti riempirebbe il
-    // contesto da solo e spingerebbe fuori tutto il resto.
+    // Without the limit, a customer with hundreds of topics would fill up
+    // the context by itself and push everything else out.
     const molti = Array.from({ length: 30 }, (_, i) => `argomento${i}`);
     const c = buildProfileContext(profiloBase({ topics: molti }));
     const riga = c.split('\n').find(r => r.startsWith('Previous topics')) ?? '';
     const elencati = riga.replace('Previous topics: ', '').split(', ');
     assert.equal(elencati.length, 10, `elencati ${elencati.length} argomenti invece di 10`);
-    // e devono essere gli ULTIMI, cioe i piu recenti
+    // and they must be the LAST ones, i.e. the most recent
     assert.ok(riga.includes('argomento29'), 'ha tenuto i piu vecchi invece dei piu recenti');
     assert.ok(!riga.includes('argomento0,'), 'ha incluso il primo argomento, che e il piu vecchio');
     console.log('✅ testTopicLimitatiADieci: gli ultimi 10, non i primi');
@@ -173,9 +175,9 @@ function testKBSenzaCategoria() {
 }
 
 function testKBIstruzioneDiOnesta() {
-    // La riga di chiusura dice al modello di ammettere quando non sa. Senza,
-    // il modello riempie il vuoto inventando — che per un bot che risponde ai
-    // clienti di un ristorante e il difetto peggiore possibile.
+    // The closing line tells the model to admit when it doesn't know.
+    // Without it, the model fills the gap by making things up — which for a
+    // bot answering a restaurant's customers is the worst possible defect.
     const c = buildKBContext([kb()]);
     assert.ok(c.includes('[END KB]'), 'manca la chiusura del blocco');
     assert.ok(/not covered here, say so honestly/i.test(c),

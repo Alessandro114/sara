@@ -72,14 +72,14 @@ interface MonitorReport {
 
 // ─── Detection Rules ───
 
-// Prezzi VIETATI: listino morto. Se SARA li dice a un cliente, è un'allucinazione grave.
-// ⚠️ FIX 17 lug 2026 (decisione di Ale): €19/€29/€39 sono stati TOLTI da questa lista — sono
-// add-on LEGITTIMI (SARA WhatsApp Connect €19, SARA Voice €29, SARA WhatsApp Business API €39).
-// Marcarli come "vietati critici" faceva scattare l'allarme quando SARA diceva la cosa GIUSTA.
+// FORBIDDEN prices: dead price list. If SARA quotes these to a customer, it's a severe hallucination.
+// ⚠️ FIX 17 Jul 2026: €19/€29/€39 were REMOVED from this list — they are
+// LEGITIMATE add-ons (SARA WhatsApp Connect €19, SARA Voice €29, SARA WhatsApp Business API €39).
+// Flagging them as "critical forbidden" triggered the alarm when SARA was saying the RIGHT thing.
 const FORBIDDEN_PRICE_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
-    { pattern: /€\s?49(?:\/|\s|$)/i, label: 'forbidden_price_€49' },     // vecchio Growth
-    { pattern: /€\s?149(?:\/|\s|$)/i, label: 'forbidden_price_€149' },   // vecchio Scale
-    { pattern: /€\s?298(?:\/|\s|$)/i, label: 'forbidden_price_€298' },   // vecchio Enterprise
+    { pattern: /€\s?49(?:\/|\s|$)/i, label: 'forbidden_price_€49' },     // old Growth
+    { pattern: /€\s?149(?:\/|\s|$)/i, label: 'forbidden_price_€149' },   // old Scale
+    { pattern: /€\s?298(?:\/|\s|$)/i, label: 'forbidden_price_€298' },   // old Enterprise
     { pattern: /€\s?79(?:\/|\s|$)/i, label: 'forbidden_price_€79' },
     { pattern: /€\s?999(?:\/|\s|$)/i, label: 'forbidden_price_€999' },
     { pattern: /€\s?41(?:\/|\s|$)/i, label: 'forbidden_price_€41' },
@@ -87,13 +87,13 @@ const FORBIDDEN_PRICE_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
     { pattern: /€\s?248(?:\/|\s|$)/i, label: 'forbidden_price_€248' },
 ];
 
-// Prezzi LEGITTIMI che SARA può dire. Qualsiasi importo fuori da qui viene segnalato.
-// ⚠️ Questo Set era INVERTITO: conteneva il listino MORTO {0,49,149,298,490,1490,2980} marcato come
-// "canonico". Effetto: SARA che diceva €97/€197 (giusto) veniva segnalata come anomalia, mentre
-// €149/€298 (sbagliato) passava in silenzio. L'antifurto suonava sui clienti e taceva sui ladri.
-// Fonte di verità: INSPECTOR-REFERENCE.md + CLAUDE.md (17 lug 2026). Il piano Starter NON esiste più.
+// LEGITIMATE prices SARA is allowed to quote. Any amount outside this set gets flagged.
+// ⚠️ This Set was INVERTED: it contained the DEAD price list {0,49,149,298,490,1490,2980} marked
+// as "canonical". Effect: SARA quoting €97/€197 (correct) was flagged as anomaly, while
+// €149/€298 (wrong) passed silently. The alarm rang for honest answers and stayed quiet for wrong ones.
+// Source of truth: INSPECTOR-REFERENCE.md + CLAUDE.md (17 Jul 2026). The Starter plan NO LONGER exists.
 const CANONICAL_PRICES = new Set([
-    '0',                        // gratuito / nessun costo
+    '0',                        // free / no cost
     '97', '970',                // Growth: €97/mese · €970/anno
     '197', '1970',              // Scale: €197/mese · €1970/anno
     '9,90', '9.90',             // SOLO SARA (offerta separata freelance/P.IVA)
@@ -142,13 +142,13 @@ const WRONG_ACRONYM_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
     { pattern: /Strategy\s*,?\s*Cash\s*,?\s*Activation/i, label: 'wrong_acronym_SCA' },
 ];
 
-// Nomi di piano INVENTATI: se SARA li dice, se li è inventati.
-// ⚠️ FIX 17 lug 2026 — questa lista era INVERTITA come CANONICAL_PRICES: segnalava come
-// "allucinazione" cose che ESISTONO DAVVERO, quindi suonava quando SARA diceva il vero:
-//   · "piano Enterprise"  → ESISTE (Custom, da €2.000/mese — INSPECTOR-REFERENCE.md)
-//   · "white label"       → ESISTE (opzione Enterprise, insieme a self-hosted)
-//   · "add-on"            → ESISTONO (WhatsApp Connect €19, Voice €29, Business API €39, crediti €5)
-// Rimossi tutti e tre. Resta solo ciò che è davvero inventato.
+// HALLUCINATED plan names: if SARA mentions these, it made them up.
+// ⚠️ FIX 17 Jul 2026 — this list was INVERTED like CANONICAL_PRICES: it flagged as
+// "hallucination" things that ACTUALLY EXIST, so it fired when SARA told the truth:
+//   · "Enterprise plan"   → EXISTS (Custom, from €2,000/mo — INSPECTOR-REFERENCE.md)
+//   · "white label"       → EXISTS (Enterprise option, alongside self-hosted)
+//   · "add-on"            → EXIST (WhatsApp Connect €19, Voice €29, Business API €39, credits €5)
+// All three removed. Only genuinely invented names remain.
 const WRONG_PLAN_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
     { pattern: /\bProfessional\s+plan\b/i, label: 'hallucination_professional_plan' },
     { pattern: /\b(?:piano|plan)\s+Starter\b/i, label: 'hallucination_starter_plan' },   // eliminato 17 lug 2026
