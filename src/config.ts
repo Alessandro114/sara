@@ -16,7 +16,7 @@ pool.on('error', (err) => {
 
 // GEMINI_API_KEY / GEMINI_MODEL exports REMOVED 2026-07-17 — Gemini is out of
 // the AI chain and out of every runtime path. Do not re-add: the chain is
-// Groq → Cerebras → Mistral (see lib/ai-providers.ts).
+// Groq → Cerebras → SambaNova → Claude → Mistral (see lib/ai-providers.ts).
 export const BOT_NAME = process.env.BOT_NAME || 'S.A.R.A.';
 export const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT_MINUTES || '30') * 60 * 1000;
 export const MAX_MEDIA_SIZE_MB = parseInt(process.env.MAX_MEDIA_SIZE_MB || '7');

@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════
 // Runs every 5 minutes. Checks wa_lead_followups table
 // for scheduled messages and generates unique messages
-// via the LLM chain (Groq→Cerebras→Mistral) at send time (not static templates).
+// via the LLM chain (Groq→Cerebras→SambaNova→Claude→Mistral) at send time (not static templates).
 // ═══════════════════════════════════════════════════
 import type { SockLike } from './wa-adapter.js';
 // The scheduler only ever needs `isReady` + the send path; keep the surface loose for

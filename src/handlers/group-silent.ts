@@ -14,7 +14,7 @@
 
 import type pg from 'pg';
 import pino from 'pino';
-import { chatChain, hasGroq, hasCerebras, hasMistral } from '../lib/ai-providers.js';
+import { chatChain, hasGroq, hasCerebras, hasMistral, hasClaude } from '../lib/ai-providers.js';
 
 const log = pino({ name: 'group-silent' });
 
@@ -810,7 +810,7 @@ function isSaraSelf(senderJid: string): boolean {
  *
  * 2026-07-17: was callGeminiRaw() — a DIRECT generativelanguage.googleapis.com
  * call that bypassed SARA's provider chain entirely. Now routed through
- * chatChain() (Groq → Cerebras → Mistral), the same chain as the rest of SARA.
+ * chatChain() (Groq → Cerebras → SambaNova → Claude → Mistral), the same chain as the rest of SARA.
  *
  * CONTRACT (unchanged, relied upon by analyzeGroupConversation):
  *   - returns null WITHOUT throwing when no provider is configured
@@ -820,8 +820,8 @@ function isSaraSelf(senderJid: string): boolean {
  * messages is never lost.
  */
 async function callLlmRaw(prompt: string): Promise<string | null> {
-  if (!hasGroq() && !hasCerebras() && !hasMistral()) {
-    log.warn('No AI provider configured (Groq/Cerebras/Mistral) — skipping group analysis');
+  if (!hasGroq() && !hasCerebras() && !hasMistral() && !hasClaude()) {
+    log.warn('No AI provider configured (Groq/Cerebras/Mistral/Claude) — skipping group analysis');
     return null;
   }
 
