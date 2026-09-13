@@ -117,6 +117,9 @@ export async function createSession(userId: string): Promise<{ qr?: string; stat
                 webhooks: [{
                     url: WEBHOOK_URL,
                     events: ['message', 'session.status'],
+                    // sara-api.ts's /api/waha-webhook rejects calls without
+                    // this header — see src/sara-api.ts's preHandler hook.
+                    customHeaders: [{ name: 'X-Sara-Webhook-Secret', value: WAHA_KEY }],
                 }],
             },
         });
