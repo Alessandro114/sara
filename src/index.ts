@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════
 // S.A.R.A. — SCALA AI Response Agent
 // WhatsApp Business Bot + REST API Bridge
-// Engine: whatsapp-web.js (NOT Baileys — Baileys removed May 2026)
+// Engine: WAHA by default (WA_ENGINE=waha), whatsapp-web.js as legacy
+// fallback (WA_ENGINE=wwebjs). Baileys removed May 2026.
 // ═══════════════════════════════════════════════════
 import 'dotenv/config';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
@@ -23,9 +24,14 @@ import { handleImage } from './handlers/image.js';
 import { handleDocument } from './handlers/document.js';
 import { startFollowupScheduler } from './followup.js';
 import { sendHumanized } from './humanize.js';
-// WA ENGINE: whatsapp-web.js (real Chromium, stable sessions, lower ban risk)
-// Baileys adapter REMOVED (May 2026) — wa-hardened-adapter.ts is dead code
+// WA ENGINE: WAHA (REST API, own container, no in-process Chromium) is the
+// default. whatsapp-web.js is kept as an opt-in legacy engine for anyone
+// already relying on it (WA_ENGINE=wwebjs) — real Chromium, stable sessions,
+// but crashes/leaks are your process's problem instead of a supervised
+// container's. Baileys adapter REMOVED (May 2026) — wa-hardened-adapter.ts
+// is dead code.
 import { createWWJSBot, type SockLike } from './wa-adapter.js';
+import { createWAHABot } from './waha-adapter.js';
 import { setActiveSock } from './lib/sock-registry.js';
 import { startCrmSyncDrainLoop } from './crm-sync.js';
 import { loadTakeoverStates } from './lib/human-takeover.js';
@@ -110,7 +116,10 @@ async function startBot() {
     // Start timer that flushes stale group message buffers
     startSilentGroupFlushTimer(pool);
 
-    const { sock, waitForConnection } = await createWWJSBot();
+    const WA_ENGINE = (process.env.WA_ENGINE || 'waha').toLowerCase();
+    const { sock, waitForConnection } = WA_ENGINE === 'wwebjs'
+        ? await createWWJSBot()
+        : await createWAHABot();
 
     // Wait for WhatsApp Business connection (QR scan)
     await waitForConnection();

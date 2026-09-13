@@ -17,7 +17,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./
 COPY patches ./patches
 RUN npx patch-package --patch-dir patches 2>/dev/null; true
-RUN mkdir -p auth_store data
+RUN mkdir -p auth_store auth_store_wwjs data && chown -R 1000:1000 /app
 
 # Run as UID 1000 (matches host user ale) so auth_store is readable/writable
 USER 1000
