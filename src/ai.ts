@@ -22,6 +22,7 @@ import {
     hasGroq,
     hasCerebras,
     hasSambaNova,
+    hasClaude,
     hasMistral,
     type ChatMsg,
     type ToolDef,
@@ -235,7 +236,7 @@ export async function cleanupExpiredCache(): Promise<number> {
 }
 
 // ─── AI STACK ─────────────────────────────────────────────
-// Single chain: Groq(rotation) → Cerebras → SambaNova → Mistral(rotation).
+// Single chain: Groq(rotation) → Cerebras → SambaNova → Claude → Mistral(rotation).
 // See chatChain() in lib/ai-providers.ts for the authoritative order.
 //
 // Gemini REMOVED 2026-07-17 (product decision: "gemini deve sparire dalla
@@ -245,7 +246,7 @@ export async function cleanupExpiredCache(): Promise<number> {
 // removal and was deleted rather than left broken — the flag is gone with it.
 // If all providers are down we degrade to breakerFallbackMessage() and log at
 // error level; we never fall back to Gemini.
-console.log('[AI] Stack mode: Groq→Cerebras→SambaNova→Mistral (SambaNova added 2026-07-25)');
+console.log('[AI] Stack mode: Groq→Cerebras→SambaNova→Claude→Mistral');
 console.log('[AI] Provider status:', getProviderStatus());
 if ((process.env.USE_NEW_AI_STACK || '').toLowerCase() === 'false') {
     console.warn('[AI] USE_NEW_AI_STACK=false is set but the flag no longer exists — the LEGACY (Gemini-first) path was removed. Ignoring; remove the var from .env.');
@@ -679,9 +680,9 @@ export async function getAIResponse(question: string, session: any, phone?: stri
     }
     console.log(`[CACHE MISS] question="${normalizedQ.substring(0, 50)}..." → calling LLM`);
 
-    // Graceful no-AI state: the chain needs at least one of Groq/Cerebras/Mistral.
-    if (!hasGroq() && !hasCerebras() && !hasSambaNova() && !hasMistral()) {
-        console.error('[AI] No chat provider configured (Groq/Cerebras/SambaNova/Mistral all missing) — serving CTA fallback');
+    // Graceful no-AI state: the chain needs at least one configured chat provider.
+    if (!hasGroq() && !hasCerebras() && !hasSambaNova() && !hasClaude() && !hasMistral()) {
+        console.error('[AI] No chat provider configured (Groq/Cerebras/SambaNova/Claude/Mistral all missing) — serving CTA fallback');
         return `Al momento non ho l'AI configurata, ma puoi scoprire SCALA AI OS su ${CTA_URLS[sector] || CTA_URLS.general} 🚀`;
     }
 
@@ -922,7 +923,7 @@ Emoji: ${agentProfile.emoji_usage || 'minimal'}`;
             return translatedFinal;
         } catch (chainErr: any) {
             // Last link of the chain — nothing else to try. Loud, not silent.
-            console.error('[AI] Chain exhausted (Groq→Cerebras→Mistral all failed):', chainErr.message);
+            console.error('[AI] Chain exhausted (Groq→Cerebras→SambaNova→Claude→Mistral all failed):', chainErr.message);
         }
 
         // Gemini eliminated from the live flow (per product decision, 2026-07-17).
@@ -957,8 +958,8 @@ export async function getMultimodalAIResponse(
     const sector = session?.sector || 'general';
     const systemPrompt = SECTOR_PROMPTS[sector] || SECTOR_PROMPTS.general;
 
-    if (!hasGroq() && !hasCerebras() && !hasSambaNova() && !hasMistral()) {
-        console.error('[AI Multimodal] No provider configured (Groq/Cerebras/Mistral all missing) — serving CTA fallback');
+    if (!hasGroq() && !hasCerebras() && !hasSambaNova() && !hasClaude() && !hasMistral()) {
+        console.error('[AI Multimodal] No provider configured (Groq/Cerebras/SambaNova/Claude/Mistral all missing) — serving CTA fallback');
         return `Al momento non ho l'AI configurata per analizzare i media. Scopri SCALA AI OS su ${CTA_URLS[sector] || CTA_URLS.general} 🚀`;
     }
 
@@ -982,7 +983,7 @@ export async function getMultimodalAIResponse(
     const isAudio = mediaPart?.inline_data?.mime_type?.startsWith('audio/');
     const isImage = mediaPart?.inline_data?.mime_type?.startsWith('image/');
 
-    // ─── AI CHAIN: transcribe/vision/chat (Groq → Cerebras → Mistral) ───
+    // ─── AI CHAIN: transcribe/vision/chat (Groq → Cerebras → SambaNova → Claude → Mistral) ───
     try {
         if (isAudio && mediaPart?.inline_data) {
             // Groq Whisper STT → Groq chat with transcript as user message
@@ -1056,12 +1057,12 @@ export function extractLeadInfo(userMessage: string): { name?: string; company?:
 }
 
 // ─── LLM-based lead info extraction (fallback when regex finds nothing) ───
-// Routed through chatChain() (Groq→Cerebras→Mistral) since 2026-07-17; was a
+// Routed through chatChain() (Groq→Cerebras→SambaNova→Claude→Mistral) since 2026-07-17; was a
 // direct Gemini generateContent call. Contract unchanged: returns {} on any
 // failure, never throws — the caller treats {} as "regex result stands".
 export async function extractLeadInfoAI(userMessage: string): Promise<{ name?: string; company?: string; email?: string; sector_hint?: string; confidence?: string }> {
     if (userMessage.length < 10) return {};
-    if (!hasGroq() && !hasCerebras() && !hasSambaNova() && !hasMistral()) return {};
+    if (!hasGroq() && !hasCerebras() && !hasSambaNova() && !hasClaude() && !hasMistral()) return {};
     try {
         const systemPrompt = `Sei un estrattore di informazioni da messaggi WhatsApp. REGOLE CRITICHE:
 
