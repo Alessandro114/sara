@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   postgres:
     image: pgvector/pgvector:pg15
@@ -23,7 +21,13 @@ services:
   waha:
     image: devlikeapro/waha
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
+      # WAHA generates a random API key on every boot if this isn't set
+      # explicitly, and there's no way for the sara container to learn it —
+      # so both containers must read the SAME value from .env, not just sara.
+      WAHA_API_KEY: ${WAHA_API_KEY}
       WHATSAPP_DEFAULT_ENGINE: GOWS
       WAHA_DASHBOARD_ENABLED: "true"
     ports:
@@ -40,6 +44,14 @@ services:
       - "3006:3006"
     env_file:
       - .env
+    environment:
+      # Hard-set to the in-network service names, overriding whatever
+      # .env says — a fresh .env.example still says localhost/127.0.0.1,
+      # which only makes sense outside Docker. Inside this network the
+      # containers must address each other by service name.
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sara
+      WAHA_API_URL: http://waha:3000
+      WAHA_WEBHOOK_URL: http://sara:3006/api/waha-webhook
     depends_on:
       postgres:
         condition: service_healthy
