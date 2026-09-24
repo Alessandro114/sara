@@ -2,8 +2,8 @@
 //
 // GDPR + Meta ToS both push us to avoid writing phone numbers and message
 // bodies to logs. This module provides:
-//   - redactPhone(): "39379...8633" → "***8633"
-//   - redactJid():   "393793658633@s.whatsapp.net" → "***8633@s.whatsapp.net"
+//   - redactPhone(): "39123...7890" → "***7890"
+//   - redactJid():   "391234567890@s.whatsapp.net" → "***7890@s.whatsapp.net"
 //   - bodyStats():   replaces a message body with {len: 42}
 //   - buildPinoLogger(): a Pino instance with custom serializers applied
 //

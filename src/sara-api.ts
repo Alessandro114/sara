@@ -13,7 +13,7 @@ import QRCode from 'qrcode';
 
 // ─── Phone number sanitization ───
 function sanitizePhone(jid: string): string {
-    // Convert WhatsApp jid (393793658633@s.whatsapp.net) to readable format (+39 379 365 8633)
+    // Convert WhatsApp jid (391234567890@s.whatsapp.net) to readable format (+39 123 456 7890)
     const raw = jid.replace(/@s\.whatsapp\.net$/, '').replace(/@g\.us$/, '');
     if (/^\d{10,15}$/.test(raw)) {
         return '+' + raw;
