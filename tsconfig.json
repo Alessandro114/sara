@@ -21,8 +21,6 @@
     ],
     "exclude": [
         "node_modules",
-        "dist",
-        "src/__tests__/**/*",
-        "src/wa-hardened-adapter.ts"
+        "dist"
     ]
 }

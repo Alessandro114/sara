@@ -21,6 +21,7 @@ import {
     lowConfidenceFallback,
 } from '../lib/sara-bot-guardrails.js';
 import { enforcePersonaRules } from '../lib/output-enforcer.js';
+import { detectSentiment } from '../lib/text-patterns.js';
 import { callDataEntry, looksLikeDataEntry, extractContactFromText } from '../lib/backend-api.js';
 import { storeInRAG, ragSearchWithScore, evaluateRetrieval } from '../ai.js';
 import { getTenantConfig } from '../lib/tenant-config.js';
@@ -207,9 +208,7 @@ export async function handleText(
     console.log(`[IN] ${redactPhone(phone)}: ${text.substring(0, 40)}...`);
     // Quick sentiment detection for per-message tracking
     const lower = text.toLowerCase();
-    const msgSentiment = /\b(grazie|perfetto|ottimo|fantastico|great|thanks|excellent|amazing|bene|bravo|stupendo|wow)\b/i.test(lower) ? 'positive'
-        : /\b(problema|difficolt|non funzion|frustrat|deluso|bad|terrible|issue|bug|lento|costoso|troppo caro|delusione|schifo)\b/i.test(lower) ? 'negative'
-        : 'neutral';
+    const msgSentiment = detectSentiment(text);
     await logMessage(phone, 'in', text, 'text', undefined, undefined, msgSentiment);
 
     // ── Opt-out / Opt-in (GDPR) — duplicated here so unit tests that call

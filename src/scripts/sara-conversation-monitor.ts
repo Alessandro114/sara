@@ -24,7 +24,10 @@ const { Pool } = pg;
 
 // ─── Config ───
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/scala_bot';
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+    throw new Error('DATABASE_URL is not set. Copy .env.example to .env and set it.');
+}
 const TG_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const TG_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID || '';
 const REPORT_DIR = process.env.SARA_MONITOR_LOG_DIR || './logs/sara-monitor';
