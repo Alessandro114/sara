@@ -57,13 +57,30 @@ await api.register(cors, {
     credentials: true,
 });
 
-// ─── Auth middleware (API Key) — skip only for health + public widget ───
+// ─── Auth middleware (API Key) — skip only for health + public widget + WAHA webhook ───
 // SECURITY: /api/sara/qr was previously public and exposed a QR code that
 // could hijack the WhatsApp account if scanned by an attacker. It now
 // requires the admin API key, same pattern as all other admin endpoints.
+//
+// /api/waha-webhook is called by the WAHA container itself, not by an
+// authenticated SARA client — it can't send x-sara-api-key. It's verified
+// separately below via a custom header WAHA is configured to echo back on
+// every webhook call (see waha-adapter.ts / lib/multi-session.ts), so this
+// exemption isn't leaving the route open to spoofed messages.
+const WAHA_WEBHOOK_SECRET = process.env.WAHA_API_KEY || '';
 api.addHook('preHandler', async (request, reply) => {
     if (request.url === '/api/sara/health') return;
     if (request.url.startsWith('/api/sara/widget/')) return;
+
+    if (request.url === '/api/waha-webhook') {
+        const sig = request.headers['x-sara-webhook-secret'];
+        if (!WAHA_WEBHOOK_SECRET || typeof sig !== 'string' ||
+            Buffer.byteLength(sig) !== Buffer.byteLength(WAHA_WEBHOOK_SECRET) ||
+            !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(WAHA_WEBHOOK_SECRET))) {
+            return reply.status(401).send({ error: 'Unauthorized', message: 'Invalid WAHA webhook secret' });
+        }
+        return;
+    }
 
     const apiKey = request.headers['x-sara-api-key'] || request.headers['authorization']?.replace('Bearer ', '');
     if (!apiKey || typeof apiKey !== 'string' || Buffer.byteLength(apiKey) !== Buffer.byteLength(SARA_API_KEY) ||
@@ -108,8 +125,8 @@ api.get('/api/sara/qr', async (_req, reply) => {
         return reply.type('text/html').send(`
             <html><body style="background:#0A0F2C;color:#C9A84C;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column">
             <h1>S.A.R.A. WhatsApp Bot</h1>
-            <p style="color:#888">Nessun QR code disponibile. Il bot potrebbe essere già connesso o in fase di avvio.</p>
-            <p style="color:#666;font-size:0.8em">Ricarica tra qualche secondo...</p>
+            <p style="color:#888">No QR code available. The bot may already be connected or starting up.</p>
+            <p style="color:#666;font-size:0.8em">Reload in a few seconds...</p>
             <script>setTimeout(() => location.reload(), 5000)</script>
             </body></html>`);
     }
@@ -118,9 +135,9 @@ api.get('/api/sara/qr', async (_req, reply) => {
 <html><head><meta charset="UTF-8"><title>S.A.R.A. QR Code</title></head>
 <body style="background:#0A0F2C;color:#C9A84C;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column">
 <h1>S.A.R.A. - Scan QR Code</h1>
-<p style="color:#888">Scansiona con WhatsApp Business &gt; Dispositivi collegati &gt; Collega dispositivo</p>
+<p style="color:#888">Scan with WhatsApp Business &gt; Linked Devices &gt; Link a Device</p>
 <img src="${qrDataUrl}" style="margin:20px;border-radius:12px;width:400px;height:400px" alt="QR Code"/>
-<p style="color:#666;font-size:0.8em">Auto-refresh ogni 30 secondi</p>
+<p style="color:#666;font-size:0.8em">Auto-refresh every 30 seconds</p>
 <script>setTimeout(function(){ location.reload(); }, 30000);</script>
 </body></html>`);
 });
@@ -463,6 +480,7 @@ import {
     stopSession,
     handleWahaWebhook,
 } from './lib/multi-session.js';
+import { handleWahaWebhookDefault } from './waha-adapter.js';
 
 // POST /api/sara/solo-whatsapp/connect — start a session, return QR
 api.post('/api/sara/solo-whatsapp/connect', async (request, reply) => {
@@ -513,11 +531,19 @@ api.post('/api/sara/solo-whatsapp/disconnect', async (request, reply) => {
     }
 });
 
-// POST /api/waha-webhook — WAHA sends incoming messages + session status here
+// POST /api/waha-webhook — WAHA sends incoming messages + session status here.
+// "solo-*" sessions are SOLO SARA multi-tenant sessions (lib/multi-session.ts);
+// everything else is the single default bot session (waha-adapter.ts), which
+// is what the open-source quickstart's docker-compose.yml runs.
 api.post('/api/waha-webhook', async (request, reply) => {
     reply.status(200).send('ok');
+    const session = (request.body as any)?.session || '';
     try {
-        await handleWahaWebhook(request.body);
+        if (session.startsWith('solo-')) {
+            await handleWahaWebhook(request.body);
+        } else {
+            await handleWahaWebhookDefault(request.body);
+        }
     } catch (err: any) {
         console.error('[WAHA-WEBHOOK]', err?.message);
     }
