@@ -37,8 +37,6 @@ import { startCrmSyncDrainLoop } from './crm-sync.js';
 import { loadTakeoverStates } from './lib/human-takeover.js';
 import { enqueueUserMessage } from './user-queue.js';
 import { initSectorEmbeddings } from './sectors.js';
-import { startAlertScheduler } from './lib/proactive-alerts.js';
-import { initOutreach } from './lib/safe-outreach.js';
 import {
     isSilentGroup,
     processGroupMessageSilently,
@@ -47,8 +45,6 @@ import {
     ensureSilentGroupsSchema,
     startSilentGroupFlushTimer,
 } from './handlers/group-silent.js';
-import { restoreAllSessions } from './lib/multi-session.js';
-import { startDreamScheduler } from './lib/dream-cycle.js';
 import { ensureFactsColumn, digestAllPending } from './lib/fact-predigest.js';
 import { redactPhone } from './lib/phone-utils.js';
 
@@ -73,11 +69,9 @@ setInterval(() => { rateLimitMap.clear(); }, 300000).unref();
 async function startBot() {
     await initDB();
 
-    // ── Schema bootstrap for tenant config + branches (2026-04-16) ──
+    // ── Schema bootstrap for branches (2026-04-16) ──
     try {
-        const { ensureTenantColumns } = await import('./lib/tenant-config.js');
         const { ensureBranchesSchema } = await import('./lib/branches.js');
-        await ensureTenantColumns();
         await ensureBranchesSchema();
     } catch (err: any) {
         console.warn('[BOOT] schema ensure failed (non-fatal):', err?.message);
@@ -130,23 +124,9 @@ async function startBot() {
     // Start follow-up scheduler
     startFollowupScheduler(sock as any);
 
-    // Start proactive alert scheduler (Feature 3)
-    startAlertScheduler();
-
     // Bootstrap facts_json column + digest pending docs
     ensureFactsColumn().then(() => digestAllPending()).catch(err =>
         console.warn('[PREDIGEST] init failed (non-fatal):', err?.message)
-    );
-
-    // Start dream cycle scheduler (pre-computes responses during off-peak hours)
-    startDreamScheduler();
-
-    // Initialize safe outreach system (Feature 5)
-    initOutreach(sock as any);
-
-    // Restore SOLO SARA multi-sessions (each customer's own WhatsApp)
-    restoreAllSessions().catch(err =>
-        console.error('[SOLO-SESSION] restore failed (non-fatal):', err?.message)
     );
 
     sock.ev.on('messages.upsert', async ({ messages }) => {

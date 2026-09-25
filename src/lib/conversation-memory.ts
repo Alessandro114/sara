@@ -371,15 +371,6 @@ export async function getMemoryContext(phone: string, currentQuestion: string, s
             } catch { /* L6 is non-blocking */ }
         }
 
-        // ─── L7: Business Insights (cross-contact learning) ───
-        if (userId) {
-            try {
-                const { getBusinessInsightsContext } = await import('./business-insights.js');
-                const insightsCtx = await getBusinessInsightsContext(userId);
-                if (insightsCtx) parts.push(insightsCtx);
-            } catch { /* L7 is non-blocking */ }
-        }
-
         // ─── L8: Sentiment context ───
         try {
             const { getSentimentContext } = await import('./sentiment-tracker.js');

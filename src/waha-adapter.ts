@@ -126,9 +126,7 @@ function emit(event: string, ...args: any[]) {
 }
 
 /**
- * Called by sara-api.ts's POST /api/waha-webhook route for any webhook whose
- * `session` is NOT a "solo-*" multi-tenant session (those go to
- * lib/multi-session.ts's handleWahaWebhook instead). This is the single
+ * Called by sara-api.ts's POST /api/waha-webhook route. This is the single
  * default bot session the open-source quickstart runs.
  */
 export async function handleWahaWebhookDefault(payload: any): Promise<void> {

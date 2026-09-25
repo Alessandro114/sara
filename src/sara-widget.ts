@@ -5,7 +5,6 @@
 import type { FastifyInstance } from 'fastify';
 import { pool } from './config.js';
 import { getAIResponse } from './ai.js';
-import { guardPlanPrices } from './humanize.js';
 
 /**
  * Registers web widget routes on the S.A.R.A. API Fastify instance.
@@ -59,7 +58,7 @@ export async function registerWidgetRoutes(api: FastifyInstance) {
 
     // Generate AI response using the existing AI layer
     const sessionForAI = { sector: detectedSector, messages_count: history.rowCount || 0 };
-    const aiResponse = guardPlanPrices(await getAIResponse(message, sessionForAI));
+    const aiResponse = await getAIResponse(message, sessionForAI);
 
     // Log response
     await pool.query(
