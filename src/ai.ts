@@ -2,12 +2,11 @@
 // SCALA WhatsApp Bot — AI Layer (v3 — with follow-up generation)
 // ═══════════════════════════════════════════════════
 import { pool, BOT_NAME, CTA_URLS } from './config.js';
-import { SECTOR_PROMPTS, PERSONA_INSTRUCTION, detectSector } from './sectors.js';
+import { SECTOR_PROMPTS, PERSONA_INSTRUCTION } from './sectors.js';
 import { getVerticalPrompt, ANTI_HALLUCINATION_FOOTER } from './vertical-prompts.js';
 import { buildToolContextSnippet, getSectorTools } from './sara-tools.js';
 import { saraToolsToOpenAI, dispatchToolCall, getToolRisk, type ToolContext } from './lib/tool-dispatcher.js';
 import { getConversationHistory } from './db.js';
-import { buildKnowledgeContext, isScalaPlatformQuery } from './scala-knowledge.js';
 import { breakerFallbackMessage } from './circuit-breaker.js';
 import { pruneContextWithStats } from './lib/context-pruner.js';
 import { tavilySearch, formatTavilyContext, shouldWebSearch } from './lib/tavily.js';
@@ -31,121 +30,6 @@ import {
 // RESPONSE CACHE — minimize LLM calls
 // ═══════════════════════════════════════════════════
 import crypto from 'crypto';
-
-// ─── Static FAQ: zero LLM calls for common questions ───
-const STATIC_FAQ: Record<string, Record<string, string>> = {
-    cos_e_scala: {
-        it: 'SCALA AI OS è il sistema operativo AI per la tua attività. S.C.A.L.A. sta per Strategy, Confirmation, Activation, Leverage, Acceleration — i 5 pilastri per far crescere il tuo business. Include 20 verticali specializzati (AdOS, AgencyOS, BeautyOS, CleanOS, DermalyOS, DineOS, FranchiseOS, LandIQ, ServiceOS, MotorOS, NetworkOS, PraxisOS, ProjectOS, PropertyOS, ReputationOS, ShopOS, StudioOS, TenderOS, TravelOS, WellnessOS), CRM integrato, Process Analyzer e Balance Sheet. Scopri di più su https://app.get-scala.com 🚀',
-        en: 'SCALA AI OS is the AI operating system for your business. S.C.A.L.A. stands for Strategy, Confirmation, Activation, Leverage, Acceleration — the 5 pillars to grow your business. It includes 20 specialized verticals (AdOS, AgencyOS, BeautyOS, CleanOS, DermalyOS, DineOS, FranchiseOS, LandIQ, ServiceOS, MotorOS, NetworkOS, PraxisOS, ProjectOS, PropertyOS, ReputationOS, ShopOS, StudioOS, TenderOS, TravelOS, WellnessOS), integrated CRM, Process Analyzer and Balance Sheet. Learn more at https://app.get-scala.com 🚀',
-        es: 'SCALA AI OS es el sistema operativo AI para tu negocio. S.C.A.L.A. significa Strategy, Confirmation, Activation, Leverage, Acceleration — los 5 pilares para hacer crecer tu negocio. Incluye 20 verticales especializados, CRM integrado, Process Analyzer y Balance Sheet. Descubre más en https://app.get-scala.com 🚀',
-        pt: 'SCALA AI OS é o sistema operacional AI para o seu negócio. S.C.A.L.A. significa Strategy, Confirmation, Activation, Leverage, Acceleration — os 5 pilares para fazer crescer o seu negócio. Inclui 20 verticais especializados, CRM integrado, Process Analyzer e Balance Sheet. Saiba mais em https://app.get-scala.com 🚀',
-    },
-    prezzi: {
-        it: 'SCALA ha 3 piani:\n• FREE — €0 per sempre, tutti i moduli in anteprima\n• GROWTH — €97/mese (14 giorni gratis), 5 verticali a scelta, 6 utenti\n• SCALE — €197/mese, tutti i 20 verticali, SARA WhatsApp 24/7, utenti illimitati, Content Repurposer\n\nTutti includono CRM, Process Analyzer e Balance Sheet. 🚀 Dettagli: https://app.get-scala.com',
-        en: 'SCALA has 3 plans:\n• FREE — €0 forever, all modules preview\n• GROWTH — €97/mo (14-day free trial), 5 verticals of your choice, 6 users\n• SCALE — €197/mo, all 20 verticals, SARA WhatsApp 24/7, unlimited users, Content Repurposer\n\nAll include CRM, Process Analyzer and Balance Sheet. 🚀 Details: https://app.get-scala.com',
-        es: 'SCALA tiene 3 planes:\n• FREE — €0 gratis para siempre\n• GROWTH — €97/mes (14 días gratis), 5 verticales a elección\n• SCALE — €197/mes, todos los 20 verticales, SARA WhatsApp 24/7, usuarios ilimitados\n\n🚀 Detalles: https://app.get-scala.com',
-        pt: 'SCALA tem 3 planos:\n• FREE — €0 grátis para sempre\n• GROWTH — €97/mês (14 dias grátis), 5 verticais à escolha\n• SCALE — €197/mês, todos os 20 verticais, SARA WhatsApp 24/7, utilizadores ilimitados\n\n🚀 Detalhes: https://app.get-scala.com',
-    },
-    chi_sei: {
-        it: 'Sono S.A.R.A., la tua assistente AI di SCALA! Ti aiuto a scoprire come SCALA AI OS può trasformare il tuo business — dalla strategia all\'automazione. Sono disponibile 24/7 qui su WhatsApp. Come posso aiutarti oggi? 😊',
-        en: 'I\'m S.A.R.A., your AI assistant from SCALA! I help you discover how SCALA AI OS can transform your business — from strategy to automation. I\'m available 24/7 here on WhatsApp. How can I help you today? 😊',
-        es: 'Soy S.A.R.A., tu asistente AI de SCALA! Te ayudo a descubrir cómo SCALA AI OS puede transformar tu negocio. Estoy disponible 24/7 aquí en WhatsApp. ¿Cómo puedo ayudarte hoy? 😊',
-        pt: 'Sou S.A.R.A., sua assistente AI da SCALA! Te ajudo a descobrir como SCALA AI OS pode transformar seu negócio. Estou disponível 24/7 aqui no WhatsApp. Como posso te ajudar hoje? 😊',
-    },
-    prova_gratuita: {
-        it: 'Certo! SCALA offre 14 giorni di prova gratuita sul piano GROWTH (€97/mese). Registrati su https://app.get-scala.com e avrai accesso completo. Nessuna carta di credito richiesta! Il piano Free è €0 per sempre.',
-        en: 'Of course! SCALA offers a 14-day free trial on the GROWTH plan (€97/mo). Sign up at https://app.get-scala.com. No credit card required! The Free plan is €0 forever.',
-        es: 'SCALA ofrece 14 dias de prueba gratuita en el plan GROWTH (€97/mes). Registrate en https://app.get-scala.com. Sin tarjeta de credito! El plan Free es €0 para siempre.',
-        pt: 'SCALA oferece 14 dias de teste gratis no plano GROWTH (€97/mes). Cadastre-se em https://app.get-scala.com. Sem cartao de credito! O plano Free e €0 para sempre.',
-    },
-    contatti: {
-        it: 'Puoi contattarci via email a contact@get-scala.com oppure continuare a scrivere qui su WhatsApp — sono sempre disponibile! La piattaforma è su https://app.get-scala.com 📧',
-        en: 'You can reach us at contact@get-scala.com or keep chatting here on WhatsApp — I\'m always available! The platform is at https://app.get-scala.com 📧',
-        es: 'Puedes contactarnos en contact@get-scala.com o seguir escribiendo aquí en WhatsApp. La plataforma está en https://app.get-scala.com 📧',
-        pt: 'Pode nos contactar em contact@get-scala.com ou continuar escrevendo aqui no WhatsApp. A plataforma está em https://app.get-scala.com 📧',
-    },
-    come_funziona: {
-        it: 'SCALA AI OS funziona in 5 step: 1️⃣ Strategy — definisci il tuo modello di business con AI, 2️⃣ Confirmation — valida le tue idee con pilot test, 3️⃣ Activation — lancia il tuo prodotto/servizio, 4️⃣ Leverage — scala con automazione e AI, 5️⃣ Acceleration — cresci esponenzialmente. Tutto in un\'unica piattaforma! Vuoi provarlo?',
-        en: 'SCALA AI OS works in 5 steps: 1️⃣ Strategy — define your business model with AI, 2️⃣ Confirmation — validate ideas with pilot tests, 3️⃣ Activation — launch your product/service, 4️⃣ Leverage — scale with automation and AI, 5️⃣ Acceleration — grow exponentially. All in one platform! Want to try it?',
-        es: 'SCALA AI OS funciona en 5 pasos: Strategy, Confirmation, Activation, Leverage, Acceleration. ¡Todo en una plataforma! ¿Quieres probarlo?',
-        pt: 'SCALA AI OS funciona em 5 etapas: Strategy, Confirmation, Activation, Leverage, Acceleration. Tudo em uma plataforma! Quer experimentar?',
-    },
-    verticali: {
-        it: 'SCALA include 20 verticali specializzati per settore: AdOS (advertising), AgencyOS (agenzie), BeautyOS (beauty), CleanOS (pulizie), DermalyOS (dermatologia), DineOS (ristorazione), FranchiseOS (franchising multi-sede), LandIQ (costruttori e sviluppatori), ServiceOS (facility management), MotorOS (automotive), NetworkOS (network marketing), PraxisOS (studi professionali), ProjectOS (project management), PropertyOS (immobiliare), ReputationOS (reputazione e recensioni), ShopOS (retail), StudioOS (studi creativi), TenderOS (gare d\'appalto), TravelOS (turismo), WellnessOS (fitness e benessere). Ogni verticale ha strumenti AI su misura per il tuo settore! Quale ti interessa?',
-        en: 'SCALA includes 20 specialized verticals: AdOS, AgencyOS, BeautyOS, CleanOS, DermalyOS, DineOS, FranchiseOS, LandIQ, ServiceOS, MotorOS, NetworkOS, PraxisOS, ProjectOS, PropertyOS, ReputationOS, ShopOS, StudioOS, TenderOS, TravelOS, WellnessOS. Each has AI tools tailored to your industry! Which one interests you?',
-        es: 'SCALA incluye 20 verticales especializados: AdOS, AgencyOS, BeautyOS, CleanOS, DermalyOS, DineOS, FranchiseOS, LandIQ, ServiceOS, MotorOS, NetworkOS, PraxisOS, ProjectOS, PropertyOS, ReputationOS, ShopOS, StudioOS, TenderOS, TravelOS, WellnessOS. ¿Cuál te interesa?',
-        pt: 'SCALA inclui 20 verticais especializados: AdOS, AgencyOS, BeautyOS, CleanOS, DermalyOS, DineOS, FranchiseOS, LandIQ, ServiceOS, MotorOS, NetworkOS, PraxisOS, ProjectOS, PropertyOS, ReputationOS, ShopOS, StudioOS, TenderOS, TravelOS, WellnessOS. Qual te interessa?',
-    },
-    sara_cosa_fai: {
-        it: 'Sono S.A.R.A. e posso aiutarti con: 📋 Informazioni su SCALA e i suoi 20 verticali, 💰 Prezzi e piani, 🔧 Supporto tecnico sulla piattaforma, 📊 Consigli strategici per il tuo business, 🎯 Demo personalizzata. Chiedimi quello che vuoi!',
-        en: 'I\'m S.A.R.A. and I can help you with: 📋 Info about SCALA and its 20 verticals, 💰 Pricing and plans, 🔧 Technical support, 📊 Strategic advice for your business, 🎯 Personalized demo. Ask me anything!',
-        es: 'Soy S.A.R.A. y puedo ayudarte con: información sobre SCALA, precios, soporte técnico, consejos estratégicos, demos personalizadas. ¡Pregúntame lo que quieras!',
-        pt: 'Sou S.A.R.A. e posso te ajudar com: informações sobre SCALA, preços, suporte técnico, conselhos estratégicos, demos personalizadas. Pergunte o que quiser!',
-    },
-    demo: {
-        it: 'Puoi provare SCALA gratuitamente per 14 giorni su https://app.get-scala.com — nessuna carta richiesta! Attiva GROWTH con 14 giorni gratuiti (€97/mese dopo il trial).',
-        en: 'You can try SCALA free for 14 days at https://app.get-scala.com — no credit card needed! Activate GROWTH with a 14-day free trial (€97/month after trial).',
-        es: 'Puedes probar SCALA gratis 14 dias en https://app.get-scala.com. Activa GROWTH con 14 dias gratis (€97/mes despues del trial).',
-        pt: 'Pode experimentar SCALA gratis por 14 dias em https://app.get-scala.com. Ative GROWTH com 14 dias gratis (€97/mes apos o trial).',
-    },
-    crm: {
-        it: 'Il CRM di SCALA e incluso in TUTTI i piani a pagamento! Puoi gestire contatti, pipeline vendite, follow-up automatici e integrazioni con WhatsApp e email. Vai su https://app.get-scala.com/crm per iniziare.',
-        en: 'SCALA CRM is included in ALL paid plans! Manage contacts, sales pipelines, automatic follow-ups and integrations with WhatsApp and email. Go to https://app.get-scala.com/crm to start.',
-        es: 'El CRM de SCALA esta incluido en TODOS los planes de pago. Gestiona contactos, pipelines, follow-ups automaticos. Ve a https://app.get-scala.com/crm',
-        pt: 'O CRM da SCALA esta incluido em TODOS os planos pagos. Gerencie contatos, pipelines, follow-ups automaticos. Acesse https://app.get-scala.com/crm',
-    },
-    enterprise: {
-        it: 'Il piano ENTERPRISE di SCALA è completamente personalizzato:\n✅ Utenti illimitati\n✅ Tutti i 20 verticali\n✅ SARA AI dedicata (KB custom + tone personalizzato)\n✅ SLA 99.99% con supporto 24/7\n✅ Account manager dedicato\n✅ Custom development su richiesta\n✅ Possibilità White-Label e Self-Hosted\n\nIl prezzo viene concordato 1-to-1 in una call con il team dedicato. Vuoi fissare una chiamata? Scrivimi a contact@get-scala.com 📞',
-        en: 'SCALA\'s ENTERPRISE plan is fully custom:\n✅ Unlimited users\n✅ All 20 verticals\n✅ Dedicated SARA AI (custom KB + tone)\n✅ 99.99% SLA with 24/7 support\n✅ Dedicated account manager\n✅ Custom development on request\n✅ White-Label and Self-Hosted options\n\nPricing is agreed 1-on-1 in a call with our dedicated team. Want to book a call? Write to contact@get-scala.com 📞',
-        es: 'El plan ENTERPRISE de SCALA es completamente personalizado:\n✅ Usuarios ilimitados\n✅ Los 20 verticales\n✅ SARA AI dedicada\n✅ SLA 99.99% + soporte 24/7\n✅ Account manager dedicado\n✅ Desarrollo custom\n\nEl precio se acuerda 1 a 1 con el equipo dedicado. ¿Quieres agendar una llamada? contact@get-scala.com 📞',
-        pt: 'O plano ENTERPRISE da SCALA é totalmente personalizado:\n✅ Utilizadores ilimitados\n✅ Todos os 20 verticais\n✅ SARA AI dedicada\n✅ SLA 99.99% + suporte 24/7\n✅ Account manager dedicado\n✅ Desenvolvimento custom\n\nO preço é acordado 1 a 1 com a equipa dedicada. contact@get-scala.com 📞',
-    },
-};
-
-// Pattern matching for FAQ detection
-const FAQ_PATTERNS: Array<{ key: string; patterns: RegExp[] }> = [
-    { key: 'cos_e_scala', patterns: [/cos['\s]?[eè]\s*scala/i, /what\s*is\s*scala/i, /qu[eé]\s*es\s*scala/i, /o\s*que\s*[eé]\s*scala/i, /spieg(ami|a)\s*(cos|che)\s*[eè]\s*scala/i] },
-    { key: 'prezzi', patterns: [/prezz[oi]\s*(?:di\s*)?scala/i, /quanto\s*cost[a-z]*\s*scala/i, /pricing\s*(?:of\s*)?scala/i, /scala\s*(?:price|pricing|plans?|piani?|prezz)/i, /piani?\s*(?:di\s*)?scala/i, /abbonament[oi]\s*scala/i, /tariff?[ae]\s*scala/i, /plans?\s*(?:and\s*)?(?:pricing|price)/i] },
-    { key: 'chi_sei', patterns: [/chi\s*sei/i, /who\s*are\s*you/i, /qui[eé]n\s*eres/i, /quem\s*[eé]\s*voc[eê]/i, /presentati/i, /introduce\s*yourself/i] },
-    { key: 'prova_gratuita', patterns: [/prova\s*gratuit/i, /prova\s*gratis/i, /quanti\s*giorni/i, /giorni\s*(?:di\s*)?prova/i, /free\s*trial/i, /prueba\s*gratis/i, /teste\s*gr[aá]tis/i, /provare\s*gratis/i, /trial/i, /quanto\s*dur[a-z]*\s*(?:la\s*)?prova/i] },
-    { key: 'contatti', patterns: [/come\s*(?:vi\s*|vi\s*)?contatt/i, /come\s*posso\s*contatt/i, /how\s*(?:can\s*i\s*)?(?:reach|contact)\s*you/i, /c[oó]mo\s*(?:puedo\s*)?contactar/i, /\bemail\s*(?:di\s*)?(?:supporto|contatto|scala)\b/i, /scrivimi|scrivetemi|mandami\s*una\s*mail/i] },
-    { key: 'come_funziona', patterns: [/come\s*funzion/i, /how\s*(?:does\s*it\s*)?work/i, /c[oó]mo\s*funciona/i, /como\s*funciona/i] },
-    { key: 'verticali', patterns: [/vertical[ie]/i, /settori?(?:\s*disponibil)?/i, /moduli?/i, /quale?\s*(?:os|vertical)/i, /industries/i, /sectors?/i] },
-    { key: 'sara_cosa_fai', patterns: [/cosa\s*(?:puoi|sai)\s*fare/i, /what\s*can\s*you\s*do/i, /^aiut(?:ami|o)$/i, /^help\s*me$/i, /qu[eé]\s*puedes\s*hacer/i, /que\s*voc[eê]\s*(?:faz|pode)\s*fazer/i] },
-    { key: 'demo', patterns: [/demo/i, /provare/i, /mostr(?:ami|a)/i, /show\s*me/i, /vedere\s*(?:la\s*)?piattaforma/i] },
-    { key: 'crm', patterns: [/\bcrm\b/i, /gestione\s*clienti/i, /customer\s*relationship/i, /pipeline/i] },
-    { key: 'enterprise', patterns: [/\benterprise\b/i, /piano\s*enterprise/i, /grandi?\s*aziende?/i, /white.?label/i, /self.?hosted/i, /personalizzat[oa]/i, /su\s*misura/i, /custom\s*plan/i, /large\s*(?:company|business)/i] },
-];
-
-/**
- * Check if a question matches a static FAQ.
- * Returns the response string or null.
- *
- * CRITICAL: Only match FAQ when the user is asking about SCALA/SARA itself,
- * NOT when asking sector-specific questions. If detectSector finds a vertical,
- * skip FAQ to let the RAG pipeline handle it properly.
- */
-function matchFAQ(normalizedQuestion: string, lang: string, detectedSector?: string | null): string | null {
-    // Guard: reject fake/nonexistent plan names
-    const fakePlans = /diamond|platinum|gold|silver|bronze|premium|ultimate|titanium|infinity/i;
-    if (fakePlans.test(normalizedQuestion)) return null;
-
-    // Guard: if a specific sector was detected, skip FAQ unless explicitly about SCALA
-    const aboutScala = /scala|s\.?a\.?r\.?a|sara\b/i.test(normalizedQuestion);
-    if (detectedSector && !aboutScala) return null;
-
-    for (const { key, patterns } of FAQ_PATTERNS) {
-        for (const pattern of patterns) {
-            if (pattern.test(normalizedQuestion)) {
-                const faq = STATIC_FAQ[key];
-                if (faq) {
-                    return faq[lang] || faq.it;
-                }
-            }
-        }
-    }
-    return null;
-}
 
 // ─── Normalize question for cache key generation ───
 function normalizeQuestion(q: string): string {
@@ -659,15 +543,6 @@ export async function getAIResponse(question: string, session: any, phone?: stri
     const systemPrompt = SECTOR_PROMPTS[sector] || SECTOR_PROMPTS.general;
     const lang = replyLangFor(question, session);
 
-    // ─── LAYER 1: Static FAQ (zero LLM calls) ───
-    // Only match FAQ when NOT in a sector-specific conversation
-    const msgSector = detectSector(question);
-    const faqResponse = matchFAQ(question, lang, msgSector);
-    if (faqResponse) {
-        console.log(`[FAQ] static response for "${question.substring(0, 40)}..." lang=${lang}`);
-        return await translateIfNeeded(faqResponse, lang);
-    }
-
     // ─── LAYER 2: Response cache (keyword-based dedup) ───
     const normalizedQ = normalizeQuestion(question);
     const cacheKey = generateCacheKey(normalizedQ, sector, lang, phone || '');
@@ -687,13 +562,13 @@ export async function getAIResponse(question: string, session: any, phone?: stri
 
     const ragContext = await ragSearch(question, sector);
 
-    // ─── Web Search (Enterprise-only — Tavily) ───
+    // ─── Web Search (Tavily, if configured) ───
     let tavilyContext = '';
-    if (session?.plan_tier === 'enterprise' && shouldWebSearch(question)) {
-        const tavilyResp = await tavilySearch(question, session.plan_tier);
+    if (shouldWebSearch(question)) {
+        const tavilyResp = await tavilySearch(question);
         if (tavilyResp && tavilyResp.results.length > 0) {
             tavilyContext = formatTavilyContext(tavilyResp);
-            console.log(`[TAVILY] Injecting web context for enterprise user (${tavilyResp.results.length} results)`);
+            console.log(`[TAVILY] Injecting web context (${tavilyResp.results.length} results)`);
         }
     }
 
@@ -733,16 +608,6 @@ export async function getAIResponse(question: string, session: any, phone?: stri
         // explicit anti-hallucination rules per vertical) before the generic PERSONA.
         const verticalPrompt = getVerticalPrompt(sector);
         let fullSystemPrompt = `${verticalPrompt}\n\n${systemPrompt}\n\n${PERSONA_INSTRUCTION}`;
-
-        // Inject SCALA platform knowledge when user asks about modules/features
-        const knowledgeContext = buildKnowledgeContext(question);
-        if (knowledgeContext) {
-            fullSystemPrompt += `\n\n${knowledgeContext}`;
-            fullSystemPrompt += `\n${aiInstr('platform_help', lang)}`;
-        }
-        if (isScalaPlatformQuery(question) && !knowledgeContext) {
-            fullSystemPrompt += `\n${aiInstr('platform_generic', lang)}`;
-        }
 
         if (session?.user_name) {
             if (session.name_verified) {
@@ -965,11 +830,6 @@ export async function getMultimodalAIResponse(
     const ragContext = await ragSearch(mediaPrompt, sector);
 
     let fullSystemPrompt = `${systemPrompt}\n\n${PERSONA_INSTRUCTION}`;
-    const mmKnowledgeContext = buildKnowledgeContext(mediaPrompt);
-    if (mmKnowledgeContext) {
-        fullSystemPrompt += `\n\n${mmKnowledgeContext}`;
-        fullSystemPrompt += `\nIMPORTANTE: L'utente sta interagendo con la piattaforma SCALA. Usa le informazioni sopra per guidarlo. Sii precisa e operativa.`;
-    }
     if (session?.user_name && session.name_verified) {
         fullSystemPrompt += `\nL'utente si chiama: ${session.user_name}. (Nome confermato dall'utente.)`;
     } else if (session?.user_name) {

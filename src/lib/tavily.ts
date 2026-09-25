@@ -1,4 +1,4 @@
-// tavily.ts — Web search via Tavily API (Enterprise-only feature)
+// tavily.ts — Web search via Tavily API (opt-in: set TAVILY_API_KEY)
 // Docs: https://docs.tavily.com/docs/rest-api/api-reference
 // Free tier: 1000 queries/month
 
@@ -20,18 +20,13 @@ export interface TavilyResponse {
 
 /**
  * Search the web via Tavily. Returns null if:
- * - planTier is not 'enterprise'
  * - TAVILY_API_KEY not configured
  * - request fails
  */
 export async function tavilySearch(
     query: string,
-    planTier: string | undefined | null,
     maxResults = 3,
 ): Promise<TavilyResponse | null> {
-    if (planTier?.toLowerCase() !== 'enterprise') {
-        return null;
-    }
     if (!TAVILY_API_KEY) {
         console.warn('[TAVILY] TAVILY_API_KEY not configured — skipping web search');
         return null;
