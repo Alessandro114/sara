@@ -2,9 +2,13 @@ services:
   postgres:
     image: pgvector/pgvector:pg15
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      # Must be set in .env — no insecure default shipped here. Compose fails
+      # fast with a clear error if POSTGRES_PASSWORD is missing.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: sara
     ports:
       - "5432:5432"
@@ -48,8 +52,9 @@ services:
       # Hard-set to the in-network service names, overriding whatever
       # .env says — a fresh .env.example still says localhost/127.0.0.1,
       # which only makes sense outside Docker. Inside this network the
-      # containers must address each other by service name.
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sara
+      # containers must address each other by service name. Password comes
+      # from the same POSTGRES_PASSWORD used by the postgres service above.
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/sara
       WAHA_API_URL: http://waha:3000
       WAHA_WEBHOOK_URL: http://sara:3006/api/waha-webhook
     depends_on:
