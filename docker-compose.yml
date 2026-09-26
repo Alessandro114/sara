@@ -10,8 +10,9 @@ services:
       # fast with a clear error if POSTGRES_PASSWORD is missing.
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: sara
-    ports:
-      - "5432:5432"
+    # No host port mapping: only the sara/waha containers on sara-net need
+    # Postgres, and pgAdmin/psql from the host can still connect via
+    # `docker compose exec postgres psql -U postgres` if you need to.
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
