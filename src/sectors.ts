@@ -852,16 +852,6 @@ export function getCTAMessage(sector: string, ctaType: string = 'general'): stri
     return ctas[ctaType] || ctas.general;
 }
 
-// ─── Product screenshots / module demos ───
-export const MODULE_SCREENSHOTS: Record<string, { image: string; caption: string }> = {
-    process: { image: 'process_analyzer.webp', caption: '📸 Ecco come appare il Process Analyzer — puoi mappare i tuoi flussi in pochi click.' },
-    strategy: { image: 'strategy_bmc.webp', caption: '📸 Questa è la sezione Strategy con BMC, SWOT e Pareto integrati.' },
-    crm: { image: 'crm_dashboard.webp', caption: '📸 Il CRM ti mostra tutti i contatti, lead scoring e automazioni.' },
-    balance: { image: 'balance_ai.webp', caption: '📸 Ecco l\'analisi AI del bilancio con benchmark di settore.' },
-    pilot: { image: 'pilot_center.webp', caption: '📸 Il Pilot Center ti permette di validare idee in 90 giorni.' },
-    activation: { image: 'activation.webp', caption: '📸 Activation: organigramma, North Star e team alignment.' },
-};
-
 // ─── SARA Data Entry — Vertical CRUD via WhatsApp ───
 // User sends natural language → SARA parses → calls backend API → creates record
 
@@ -925,23 +915,6 @@ export function detectDataEntryIntent(text: string, userSector?: string): { dete
         }
     }
     return { detected: false, sector: '', pattern: null, rawInput: text };
-}
-
-export function getModuleScreenshot(text: string): { image: string; caption: string } | null {
-    const lower = text.toLowerCase();
-    if (/\b(process[io]|flusso|workflow|sop|procedur|mappatura|magazzino|produzione|logistica)\b/.test(lower))
-        return MODULE_SCREENSHOTS.process;
-    if (/\b(strateg|bmc|canvas|swot|pareto|crescita|business model|go.?to.?market)\b/.test(lower))
-        return MODULE_SCREENSHOTS.strategy;
-    if (/\b(crm|contatt|lead|email|newsletter|prospect|funnel|vendite)\b/.test(lower))
-        return MODULE_SCREENSHOTS.crm;
-    if (/\b(bilancio|balance|finanzi|budget|conto economico|kpi|cash.?flow|margine)\b/.test(lower))
-        return MODULE_SCREENSHOTS.balance;
-    if (/\b(pilot|valid|test|esperimento|mvp|idea|lancio|90 giorni)\b/.test(lower))
-        return MODULE_SCREENSHOTS.pilot;
-    if (/\b(team|organigramma|north star|obiettiv|okr|allineamento)\b/.test(lower))
-        return MODULE_SCREENSHOTS.activation;
-    return null;
 }
 
 // ═══════════════════════════════════════════════════

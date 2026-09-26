@@ -3,14 +3,17 @@
 // chat page + /chat endpoint on port 3099. Does NOT touch the live WA process.
 import http from 'http';
 import fs from 'fs';
-process.chdir('/home/ale/whatsapp-bot');
+import path from 'path';
+import { fileURLToPath } from 'url';
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+process.chdir(repoRoot);
 for (const line of fs.readFileSync('./.env', 'utf8').split('\n')) {
   if (!line || line.startsWith('#') || !line.includes('=')) continue;
   const i = line.indexOf('='); const k = line.slice(0, i).trim();
   if (!(k in process.env)) process.env[k] = line.slice(i + 1).trim();
 }
-const { getAIResponse } = await import('/home/ale/whatsapp-bot/dist/ai.js');
-const { guardPlanPrices } = await import('/home/ale/whatsapp-bot/dist/humanize.js');
+const { getAIResponse } = await import(path.join(repoRoot, 'dist/ai.js'));
+const { guardPlanPrices } = await import(path.join(repoRoot, 'dist/humanize.js'));
 
 const HTML = `<!doctype html><html><head><meta charset="utf-8"><title>SARA selftest</title></head>
 <body style="font-family:sans-serif;max-width:560px;margin:40px auto">

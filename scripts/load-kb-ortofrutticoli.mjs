@@ -2,7 +2,7 @@
 // ═══════════════════════════════════════════════════
 // SARA RAG KB — Ortofrutticoli B2B (Wholesale Produce)
 // Multilingual: IT/EN/ES/PT/DE
-// Run: cd /home/ale/whatsapp-bot && node scripts/load-kb-ortofrutticoli.mjs
+// Run: node scripts/load-kb-ortofrutticoli.mjs (from the repo root)
 // ═══════════════════════════════════════════════════
 import 'dotenv/config';
 import pg from 'pg';

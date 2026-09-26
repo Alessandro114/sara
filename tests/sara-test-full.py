@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # SARA — test SERIO (esteso). Prezzi, verticali, obiezioni, trappole anti-allucinazione.
 # must = deve comparire ; mustnot = NON deve comparire. Stampa ogni Q/A per feedback qualitativo.
+import os
 import sys
 from playwright.sync_api import sync_playwright
 
@@ -47,7 +48,7 @@ with sync_playwright() as p:
             if bad.lower() in reply.lower(): ok=False
         rows.append((c["q"],reply,ok)); failed+=(not ok)
         print(f"\n[{i+1}] 👤 {c['q']}\n    🤖 {reply.strip()[:400]}\n    {'✅ PASS' if ok else '❌ FAIL'}")
-    pg.screenshot(path="/home/ale/whatsapp-bot/tests/sara-test-full-result.png", full_page=True)
+    pg.screenshot(path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "sara-test-full-result.png"), full_page=True)
     b.close()
 print(f"\n=== RISULTATO: {len(CASES)-failed}/{len(CASES)} PASS ===")
 sys.exit(1 if failed else 0)

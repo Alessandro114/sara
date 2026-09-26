@@ -430,47 +430,6 @@ export async function markFollowupSent(id: string) {
     await pool.query('UPDATE wa_lead_followups SET sent=true WHERE id=$1', [id]);
 }
 
-// ─── Lookup SCALA user by phone number ───
-// Cached module-level pool — lookupScalaUser runs on every new user's first
-// message, so we reuse a single Pool instead of creating/ending one per call.
-let _scalaLookupPool: any = null;
-async function getScalaLookupPool() {
-    if (_scalaLookupPool) return _scalaLookupPool;
-    const scalaDbUrl = process.env.SCALA_DB_URL;
-    if (!scalaDbUrl) return null;
-    const scalaPg = new (await import('pg')).default.Pool({
-        connectionString: scalaDbUrl,
-    });
-    scalaPg.on('error', (err: any) => console.error('[DB] scala lookup pool idle client error', err));
-    _scalaLookupPool = scalaPg;
-    return _scalaLookupPool;
-}
-
-export async function lookupScalaUser(phone: string): Promise<{ id: string; email: string; full_name: string; plan_tier: string } | null> {
-    // Connect to the SCALA main DB (scalacore) to look up the user.
-    // Credentials MUST come from env — never hardcode DB passwords.
-    const scalaPg = await getScalaLookupPool();
-    if (!scalaPg) {
-        console.warn('[DB] lookupScalaUser skipped — SCALA_DB_URL not configured');
-        return null;
-    }
-    try {
-        // Normalize phone: strip whatsapp suffixes, extract digits
-        const cleanPhone = phone.replace(/@.*/, '').replace(/[^0-9+]/g, '');
-        const r = await scalaPg.query(
-            `SELECT id, email, full_name, plan_tier FROM users
-             WHERE phone = $1 OR phone LIKE '%' || $1
-             OR phone = $2 OR phone LIKE '%' || $2
-             LIMIT 1`,
-            [cleanPhone, cleanPhone.replace(/^\+/, '')]
-        );
-        return r.rows[0] || null;
-    } catch (err) {
-        console.error('[DB] lookupScalaUser error:', err);
-        return null;
-    }
-}
-
 // ─── Follow-up message templates removed ───
 // Messages are now generated dynamically in ai.ts → generateFollowupMessage()
 // The old getFollowupMessage() and getSectorTip() are superseded by the AI-generated messages

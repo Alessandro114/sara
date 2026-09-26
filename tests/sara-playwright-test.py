@@ -2,6 +2,7 @@
 # Playwright hallucination test for SARA. Drives a real headless browser against
 # the test server (port 3099) and asserts SARA answers on-topic with correct
 # prices and NO canned "non ho informazioni" fallback.
+import os
 import sys
 from playwright.sync_api import sync_playwright
 
@@ -30,7 +31,7 @@ with sync_playwright() as p:
                 ok = False
         print(f"\n👤 {c['q']}\n🤖 {reply}\n   {'✅ PASS' if ok else '❌ FAIL'}")
         failed += (not ok)
-    page.screenshot(path="/home/ale/whatsapp-bot/tests/sara-playwright-result.png", full_page=True)
+    page.screenshot(path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "sara-playwright-result.png"), full_page=True)
     browser.close()
 
 print(f"\n=== {'✅ TUTTI PASS' if failed == 0 else f'❌ {failed} FAIL'} ===")

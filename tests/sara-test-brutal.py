@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """SARA — Test BRUTALE (24 casi). Lanciare dopo ogni restart/modifica KB."""
+import os
 import sys
 from playwright.sync_api import sync_playwright
 CANNED = "non ho informazioni"
@@ -45,7 +46,7 @@ with sync_playwright() as p:
             if bad.lower() in reply.lower(): ok=False
         failed+=(not ok)
         print(f"\n[{i+1}/{len(CASES)}] {c['label']}\n  👤 {c['q']}\n  🤖 {reply.strip()[:280]}\n  {'✅' if ok else '❌ FAIL'}")
-    pg.screenshot(path="/home/ale/whatsapp-bot/tests/sara-test-brutal-result.png",full_page=True)
+    pg.screenshot(path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "sara-test-brutal-result.png"),full_page=True)
     b.close()
 print(f"\n{'='*50}\nRISULTATO: {len(CASES)-failed}/{len(CASES)} PASS | {failed} FAIL\n{'='*50}")
 sys.exit(1 if failed else 0)

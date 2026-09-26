@@ -13,7 +13,7 @@ import QRCode from 'qrcode';
 
 // ─── Phone number sanitization ───
 function sanitizePhone(jid: string): string {
-    // Convert WhatsApp jid (393793658633@s.whatsapp.net) to readable format (+39 379 365 8633)
+    // Convert WhatsApp jid (391234567890@s.whatsapp.net) to readable format (+39 123 456 7890)
     const raw = jid.replace(/@s\.whatsapp\.net$/, '').replace(/@g\.us$/, '');
     if (/^\d{10,15}$/.test(raw)) {
         return '+' + raw;
@@ -65,7 +65,7 @@ await api.register(cors, {
 // /api/waha-webhook is called by the WAHA container itself, not by an
 // authenticated SARA client — it can't send x-sara-api-key. It's verified
 // separately below via a custom header WAHA is configured to echo back on
-// every webhook call (see waha-adapter.ts / lib/multi-session.ts), so this
+// every webhook call (see waha-adapter.ts), so this
 // exemption isn't leaving the route open to spoofed messages.
 const WAHA_WEBHOOK_SECRET = process.env.WAHA_API_KEY || '';
 api.addHook('preHandler', async (request, reply) => {
@@ -466,84 +466,13 @@ api.post('/api/send-message', async (request, reply) => {
     }
 });
 
-// ═══════════════════════════════════════════════════════════
-// SOLO SARA — Multi-Session WhatsApp API
-// These endpoints are called by the scala-backend proxy
-// with x-sara-api-key auth. The user_id comes from the
-// backend's JWT validation (passed in request body/query).
-// ═══════════════════════════════════════════════════════════
-import {
-    createSession,
-    getSessionStatus,
-    getQRCode,
-    getConnectedPhone,
-    stopSession,
-    handleWahaWebhook,
-} from './lib/multi-session.js';
 import { handleWahaWebhookDefault } from './waha-adapter.js';
 
-// POST /api/sara/solo-whatsapp/connect — start a session, return QR
-api.post('/api/sara/solo-whatsapp/connect', async (request, reply) => {
-    const { user_id } = (request.body as any) || {};
-    if (!user_id) return reply.status(400).send({ error: 'user_id required' });
-    try {
-        const result = await createSession(user_id);
-        return reply.send({ qr_base64: result.qr || null, status: result.status });
-    } catch (err: any) {
-        console.error(`[SOLO-API] connect failed for ${user_id}:`, err?.message);
-        if (err?.code === 'MAX_SESSIONS') {
-            return reply.status(429).send({ error: 'Too many active sessions. Try again later.' });
-        }
-        return reply.status(500).send({ error: 'Session creation failed' });
-    }
-});
-
-// GET /api/sara/solo-whatsapp/status?user_id=xxx
-api.get('/api/sara/solo-whatsapp/status', async (request, reply) => {
-    const { user_id } = (request.query as any) || {};
-    if (!user_id) return reply.status(400).send({ error: 'user_id required' });
-    const status = await getSessionStatus(user_id);
-    const phone = getConnectedPhone(user_id);
-    return reply.send({ status, phone: phone || undefined });
-});
-
-// GET /api/sara/solo-whatsapp/qr?user_id=xxx
-api.get('/api/sara/solo-whatsapp/qr', async (request, reply) => {
-    const { user_id } = (request.query as any) || {};
-    if (!user_id) return reply.status(400).send({ error: 'user_id required' });
-    const status = await getSessionStatus(user_id);
-    if (status === 'connected') return reply.send({ status: 'connected' });
-    const qr = await getQRCode(user_id);
-    if (!qr) return reply.send({ status, qr_base64: null });
-    return reply.send({ qr_base64: qr, status });
-});
-
-// POST /api/sara/solo-whatsapp/disconnect — stop session, remove auth
-api.post('/api/sara/solo-whatsapp/disconnect', async (request, reply) => {
-    const { user_id } = (request.body as any) || {};
-    if (!user_id) return reply.status(400).send({ error: 'user_id required' });
-    try {
-        await stopSession(user_id);
-        return reply.send({ success: true, status: 'disconnected' });
-    } catch (err: any) {
-        console.error(`[SOLO-API] disconnect failed for ${user_id}:`, err?.message);
-        return reply.status(500).send({ error: 'Disconnect failed' });
-    }
-});
-
 // POST /api/waha-webhook — WAHA sends incoming messages + session status here.
-// "solo-*" sessions are SOLO SARA multi-tenant sessions (lib/multi-session.ts);
-// everything else is the single default bot session (waha-adapter.ts), which
-// is what the open-source quickstart's docker-compose.yml runs.
 api.post('/api/waha-webhook', async (request, reply) => {
     reply.status(200).send('ok');
-    const session = (request.body as any)?.session || '';
     try {
-        if (session.startsWith('solo-')) {
-            await handleWahaWebhook(request.body);
-        } else {
-            await handleWahaWebhookDefault(request.body);
-        }
+        await handleWahaWebhookDefault(request.body);
     } catch (err: any) {
         console.error('[WAHA-WEBHOOK]', err?.message);
     }

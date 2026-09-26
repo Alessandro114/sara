@@ -5,10 +5,9 @@ type WASocket = any;
 type WAMessage = any;
 import { extractTextContent } from '../media.js';
 import { getAIResponse, extractLeadInfo, extractLeadInfoAI } from '../ai.js';
-import { getSession, upsertSession, logMessage, updateLeadInfo, updateLeadScore, scheduleFollowups, cancelPendingFollowups, lookupScalaUser } from '../db.js';
+import { getSession, upsertSession, logMessage, updateLeadInfo, updateLeadScore, scheduleFollowups, cancelPendingFollowups } from '../db.js';
 import { detectSector, detectSectorSemantic, detectCompanySize, getCTAMessage } from '../sectors.js';
 import { detectIntent, getIntentScore, getBestCTAType, getDominantIntent } from '../intent.js';
-import { isScalaPlatformQuery } from '../scala-knowledge.js';
 import { BOT_NAME } from '../config.js';
 import { sendHumanized } from '../humanize.js';
 import {
@@ -24,7 +23,8 @@ import { enforcePersonaRules } from '../lib/output-enforcer.js';
 import { detectSentiment } from '../lib/text-patterns.js';
 import { callDataEntry, looksLikeDataEntry, extractContactFromText } from '../lib/backend-api.js';
 import { storeInRAG, ragSearchWithScore, evaluateRetrieval } from '../ai.js';
-import { getTenantConfig } from '../lib/tenant-config.js';
+import { DEFAULT_TONE } from '../lib/tone-presets.js';
+import { DEFAULT_RAG_CONFIDENCE_THRESHOLD } from '../lib/sara-bot-guardrails.js';
 import { resolveBranchForPhone, branchContextSnippet } from '../lib/branches.js';
 import { updateClientProfile, checkAndGenerateSummary, getAiMode, setAiMode } from '../lib/conversation-memory.js';
 import { syncContactToCRM, detectCRMTags, getAdminUserId } from '../crm-sync.js';
@@ -432,53 +432,19 @@ export async function handleText(
 
     // Welcome message ONLY for first-time users
     if (session.messages_count <= 1) {
-        // Check if phone matches a registered SCALA user
-        let scalaUser: Awaited<ReturnType<typeof lookupScalaUser>> = null;
-        try {
-            scalaUser = await lookupScalaUser(phone);
-        } catch { /* ignore lookup errors */ }
-
         // Language-aware welcome message (IT/EN/ES/PT).
         const welcomeLang = (session?.user_language || detectedLanguage || 'it') as string;
         const welcomeTemplates = {
-            it: {
-                registered: (name: string, tier: string) => `Ciao ${name}! 👋 Sono ${BOT_NAME}, la tua assistente AI. Vedo che sei registrato a SCALA con piano ${tier}. Come posso aiutarti oggi? 🚀`,
-                anon: `Ciao! 👋 Sono ${BOT_NAME}, la tua assistente AI di SCALA. Sono qui per aiutarti a scoprire come l'intelligenza artificiale può trasformare il tuo business. In che settore operi? 🚀`,
-            },
-            en: {
-                registered: (name: string, tier: string) => `Hi ${name}! 👋 I'm ${BOT_NAME}, your AI assistant. I can see you're registered with SCALA on the ${tier} plan. How can I help you today? 🚀`,
-                anon: `Hi! 👋 I'm ${BOT_NAME}, the AI assistant from SCALA. I'm here to help you discover how AI can transform your business. What sector do you work in? 🚀`,
-            },
-            es: {
-                registered: (name: string, tier: string) => `¡Hola ${name}! 👋 Soy ${BOT_NAME}, tu asistente de IA. Veo que estás registrado en SCALA con el plan ${tier}. ¿Cómo puedo ayudarte hoy? 🚀`,
-                anon: `¡Hola! 👋 Soy ${BOT_NAME}, la asistente de IA de SCALA. Estoy aquí para ayudarte a descubrir cómo la inteligencia artificial puede transformar tu negocio. ¿En qué sector trabajas? 🚀`,
-            },
-            pt: {
-                registered: (name: string, tier: string) => `Oi ${name}! 👋 Eu sou a ${BOT_NAME}, sua assistente de IA. Vejo que você está registrado na SCALA no plano ${tier}. Como posso te ajudar hoje? 🚀`,
-                anon: `Oi! 👋 Eu sou a ${BOT_NAME}, assistente de IA da SCALA. Estou aqui para te ajudar a descobrir como a inteligência artificial pode transformar o seu negócio. Em que setor você atua? 🚀`,
-            },
+            it: `Ciao! 👋 Sono ${BOT_NAME}, la tua assistente AI di SCALA. Sono qui per aiutarti a scoprire come l'intelligenza artificiale può trasformare il tuo business. In che settore operi? 🚀`,
+            en: `Hi! 👋 I'm ${BOT_NAME}, the AI assistant from SCALA. I'm here to help you discover how AI can transform your business. What sector do you work in? 🚀`,
+            es: `¡Hola! 👋 Soy ${BOT_NAME}, la asistente de IA de SCALA. Estoy aquí para ayudarte a descubrir cómo la inteligencia artificial puede transformar tu negocio. ¿En qué sector trabajas? 🚀`,
+            pt: `Oi! 👋 Eu sou a ${BOT_NAME}, assistente de IA da SCALA. Estou aqui para te ajudar a descobrir como a inteligência artificial pode transformar o seu negócio. Em que setor você atua? 🚀`,
         } as const;
-        const tpl = (welcomeTemplates as any)[welcomeLang] || welcomeTemplates.it;
+        const welcome = (welcomeTemplates as any)[welcomeLang] || welcomeTemplates.it;
 
-        if (scalaUser) {
-            // Link the SCALA user to this WhatsApp session
-            await upsertSession(phone, { user_name: scalaUser.full_name } as any);
-            // Store scala_user_id in session via direct query
-            const { pool } = await import('../db.js');
-            await pool.query(
-                'UPDATE wa_sessions SET scala_user_id = $1, plan_tier = $2 WHERE phone = $3',
-                [scalaUser.id, scalaUser.plan_tier || 'starter', phone]
-            );
-
-            const tierName = scalaUser.plan_tier ? scalaUser.plan_tier.charAt(0).toUpperCase() + scalaUser.plan_tier.slice(1) : 'Free';
-            const welcome = tpl.registered(scalaUser.full_name || '', tierName);
-            await sendHumanized(sock, phone, welcome);
-            console.log(`[SCALA-LINK] ${redactPhone(phone)} → user (plan: ${scalaUser.plan_tier})`);
-        } else {
-            await sendHumanized(sock, phone, tpl.anon);
-        }
+        await sendHumanized(sock, phone, welcome);
         // Schedule follow-up chain
-        await scheduleFollowups(phone, session.user_name || scalaUser?.full_name, session.sector);
+        await scheduleFollowups(phone, session.user_name, session.sector);
         return;
     }
 
@@ -555,16 +521,11 @@ export async function handleText(
         await upsertSession(phone, { context: ctx } as any);
     }
 
-    // Detect if user is asking about SCALA platform usage — temporarily switch to scala_user sector
-    // BUT: if a real vertical sector was detected, this is NOT a SCALA platform question
-    // (e.g. "quanto costa il TARI?" is waste sector, not SCALA pricing)
-    const hasSectorContext = session?.sector && session.sector !== 'general' && session.sector !== 'scala_user';
-    const isPlatformQuery = !hasSectorContext && isScalaPlatformQuery(text);
     const dominantIntentType = getDominantIntent(intentSignals);
     const isModuleHelp = dominantIntentType === 'help_module' || dominantIntentType === 'create_data' || dominantIntentType === 'analyze';
 
     let aiSession = session;
-    if (isPlatformQuery || isModuleHelp) {
+    if (isModuleHelp) {
         aiSession = { ...session, sector: 'scala_user' };
         console.log(`[SCALA] ${redactPhone(phone)}: Platform query detected (intent: ${dominantIntentType})`);
     }
@@ -574,7 +535,14 @@ export async function handleText(
     // If below, we still call the LLM, but with a strict fallback system
     // prompt that forbids inventing specifics, then run the forbidden-claim
     // validator on the output.
-    const tenantCfg = await getTenantConfig(session?.scala_user_id || null);
+    // Single-tenant defaults (self-host has no per-account override table).
+    const tenantCfg = {
+        confidenceThreshold: DEFAULT_RAG_CONFIDENCE_THRESHOLD,
+        tonePreset: DEFAULT_TONE,
+        escalationName: 'il team dedicato',
+        escalationEmail: null as string | null,
+        escalationPhone: null as string | null,
+    };
     let ragTopScore = 0;
     let cragVerdict: 'correct' | 'ambiguous' | 'incorrect' = 'ambiguous';
     try {
@@ -763,12 +731,6 @@ export async function handleText(
     // ── Feature 1: Update conversation memory (non-blocking) ──
     updateClientProfile(phone, text, response, session).catch(() => {});
     checkAndGenerateSummary(phone, session.messages_count || 0).catch(() => {});
-
-    // ── L7: Trigger business insights refresh (non-blocking) ──
-    try {
-        const { maybeRefreshInsights } = await import('../lib/business-insights.js');
-        if (session?.scala_user_id) maybeRefreshInsights(session.scala_user_id);
-    } catch { /* L7 non-blocking */ }
 
     // ── L8: Log sentiment (non-blocking, fire-and-forget) ──
     try {

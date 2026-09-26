@@ -6,8 +6,8 @@
 
 /**
  * Strip WhatsApp JID suffix and normalize to digits-only (no + sign).
- * e.g. "393793658633@s.whatsapp.net" → "393793658633"
- * e.g. "+39 379 365 8633" → "393793658633"
+ * e.g. "391234567890@s.whatsapp.net" → "391234567890"
+ * e.g. "+39 123 456 7890" → "391234567890"
  */
 export function normalizePhone(phone: string): string {
     return phone

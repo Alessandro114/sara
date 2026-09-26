@@ -11,83 +11,6 @@
 type WASocket = any;
 import { logMessage } from './db.js';
 
-// ── Plan-price hallucination guard ──
-// The LLM sometimes quotes a wrong price for a SCALA plan even when the correct
-// figure is in context (observed: "Growth €149/mese", "Starter €49: 2 utenti").
-// Authoritative monthly prices: Growth €97, Scale €197, SOLO SARA €9,90, Free €0.
-// "Starter" is NOT a SCALA plan — it is the dead name of the entry paid tier
-// (legacy €49), so it is normalized to Growth €97.
-//
-// ── Why this does not mangle third-party price lists ──
-// SARA also answers from tenant knowledge bases (e.g. a client selling sofas at
-// €490, or ladders — "scale" is a common Italian noun). Three limits keep the
-// guard inside SCALA territory:
-//   1. A price is only ever touched when a plan NAME sits before it. "divani a
-//      €490" has no plan name, so it can never match.
-//   2. Two match strengths, deliberately asymmetric:
-//        • a "/mese"-style suffix is a strong signal on its own → the original
-//          loose 45-char window is kept, ungated (legacy behaviour, unchanged);
-//        • WITHOUT a month suffix the price must be glued to the plan name
-//          (max 6 chars of separators — "Starter €49" ✓, "to scale your
-//          business, plans start at €97" ✗) AND the message must contain SCALA
-//          plan vocabulary. Both conditions, not either.
-//   3. Annual prices are explicitly protected: €970/anno and €1.970/anno are
-//      legitimate, so a price followed by a year unit is never rewritten.
-const MONTH = '(\\s*(?:/|per\\s+|al\\s+|par\\s+|pro\\s+)?\\s*(?:mes(?:e|es)?|months?|mo|mois|monats?|m[êe]s)\\b)';
-const PRICE = '€\\s?\\d{1,4}(?:[.,]\\d{1,3})?';
-// Guard against rewriting the legitimate annual figures (€970/anno, €1970/year).
-const NOT_YEAR = '(?!\\s*(?:/|per\\s+|al\\s+|a\\s+|pro\\s+)?\\s*(?:ann[oi]|añ[oa]s?|years?|yr|jahr)\\b)';
-const LOOSE_GAP = '[^.\\n€]{0,45}?';
-const TIGHT_GAP = '[ \\t—–\\-:()]{0,6}';
-// Plan vocabulary — proof we are talking about SCALA subscriptions and not a
-// tenant's own catalogue. Plan NAMES are deliberately excluded from this list:
-// including them would make the check circular.
-const SCALA_CONTEXT = /\b(?:scala|s\.c\.a\.l\.a|sara|pian[oi]|plans?|planes?|planos?|abbonament\w*|subscription|utent[ie]|users?|usuari\w*|verticali?|verticals?|verticais|verticales|credits?|crediti|creditos|trial)\b/i;
-const PLAN_PRICES: Array<[string, string]> = [
-    ['Growth', '97'],
-    ['Scale', '197'],
-    ['SOLO\\s?SARA', '9,90'],
-];
-
-export function guardPlanPrices(text: string): string {
-    if (!text || typeof text !== 'string') return text;
-    const scalaCtx = SCALA_CONTEXT.test(text);
-
-    const rewrite = (s: string, name: string, right: string, gap: string, suffixRequired: boolean): string =>
-        s.replace(
-            new RegExp(
-                '(\\b' + name + '\\b' + gap + ')' + PRICE + NOT_YEAR +
-                (suffixRequired ? MONTH : '(?:' + MONTH + ')?'),
-                'gi'
-            ),
-            (m, pre, suf) => {
-                // Suffix-less rewrites only fire inside explicit SCALA plan talk.
-                if (!suffixRequired && !scalaCtx) return m;
-                return pre + '€' + right + (suf || '');
-            }
-        );
-
-    let t = text;
-
-    // Phantom plan: "Starter" does not exist. Normalize name AND price.
-    t = t.replace(
-        new RegExp('\\bStarter\\b(' + TIGHT_GAP + ')' + PRICE + NOT_YEAR + '(?:' + MONTH + ')?', 'gi'),
-        (m, pre, suf) => (scalaCtx ? 'Growth' + pre + '€97' + (suf || '') : m)
-    );
-    // "Free" is €0. Tight gap only: it must be a plan label sitting on a price,
-    // never the adjective in "free trial on GROWTH (€97/mo)".
-    t = t.replace(
-        new RegExp('(\\bFree\\b' + TIGHT_GAP + ')' + PRICE + NOT_YEAR + '(?:' + MONTH + ')?', 'gi'),
-        (m, pre, suf) => (scalaCtx ? pre + '€0' + (suf || '') : m)
-    );
-
-    for (const [plan, right] of PLAN_PRICES) {
-        t = rewrite(t, plan, right, LOOSE_GAP, true);   // strong signal: month suffix
-        t = rewrite(t, plan, right, TIGHT_GAP, false);  // suffix-less, context-gated
-    }
-    return t;
-}
-
 /**
  * Simulate a human "reading" the incoming message before starting to type.
  */
@@ -219,7 +142,6 @@ export async function sendHumanized(
     fullText: string,
     mediaType: string = 'text'
 ): Promise<void> {
-    fullText = guardPlanPrices(fullText);
     const chunks = splitMessage(fullText);
 
     for (let i = 0; i < chunks.length; i++) {
