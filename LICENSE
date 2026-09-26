@@ -545,13 +545,18 @@ interacting with it remotely through a computer network (if your version
 supports such interaction) an opportunity to receive the Corresponding
 Source of your version by providing access to the Corresponding Source
 from a network server at no charge, through some standard or customary
-means of facilitating copying of software.  Notwithstanding any other
-provision of this License, you have permission to link or combine any
-covered work with a work licensed under version 3 of the GNU General
-Public License into a single combined work, and to convey the resulting
-work.  The terms of this License will continue to apply to the part which
-is the covered work, but the work with which it is combined will remain
-governed by version 3 of the GNU General Public License.
+means of facilitating copying of software.  This Corresponding Source
+shall include the Corresponding Source for any work covered by version 3
+of the GNU General Public License that is incorporated pursuant to the
+following paragraph.
+
+  Notwithstanding any other provision of this License, you have
+permission to link or combine any covered work with a work licensed
+under version 3 of the GNU General Public License into a single
+combined work, and to convey the resulting work.  The terms of this
+License will continue to apply to the part which is the covered work,
+but the work with which it is combined will remain governed by version
+3 of the GNU General Public License.
 
   14. Revised Versions of this License.
 
@@ -628,8 +633,8 @@ the "copyright" line and a pointer to where the full notice is found.
     Copyright (C) 2024-2026 Alessandro Binda / S.C.A.L.A. AI OS
 
     This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
@@ -644,8 +649,8 @@ Also add information on how to contact you by electronic and paper mail.
 
   If your software can interact with users remotely through a computer
 network, you should also make sure that it provides a way for users to
-get its source code.  For example, if your program is a web application,
-its interface could display a "Source" link that leads users to an archive
+get its source.  For example, if your program is a web application, its
+interface could display a "Source" link that leads users to an archive
 of the code.  There are many ways you could offer source, and different
 solutions will be better for different programs; see section 13 for the
 specific requirements.
