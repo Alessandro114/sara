@@ -8,6 +8,12 @@ import { initMemoryTables } from './lib/conversation-memory.js';
 
 export async function initDB() {
     try {
+        // The knowledge table stores embeddings as vector(1024), so the
+        // extension has to exist before any of the DDL below runs. Without it
+        // the whole batch fails on a fresh database — which is exactly what
+        // happens to anyone who clones this repo and runs docker compose up.
+        await pool.query('CREATE EXTENSION IF NOT EXISTS vector');
+
         await pool.query(`
         CREATE TABLE IF NOT EXISTS wa_sessions (
           phone TEXT PRIMARY KEY, sector TEXT DEFAULT 'general',
@@ -175,6 +181,13 @@ export async function initDB() {
         // Init memory tables (Feature 1)
         await initMemoryTables();
 
+        // Also the persistent-memory tables (sara_contact_profiles and
+        // friends). These used to be created only by index.ts at boot, so
+        // anything reaching the database through initDB() alone — scripts,
+        // tests, the API on its own — came up with a partial schema.
+        const { ensureMemorySchema } = await import('./lib/persistent-memory.js');
+        await ensureMemorySchema();
+
         // L7-L10: Advanced memory tables
         await pool.query(`
             -- L7: Business Insights
@@ -227,7 +240,15 @@ export async function initDB() {
 
         console.log('[DB] Tables ready (including SARA TalkMind features + L7-L10)');
     } catch (err: any) {
-        console.warn('[DB] Table initialization skipped (tables may already exist):', err?.message);
+        // Do not swallow this. Every statement above is CREATE ... IF NOT
+        // EXISTS, so an existing schema is never the cause — the old message
+        // claimed it was, and turned a hard failure into a bot that starts up
+        // with no tables behind it and misbehaves later.
+        console.error('[DB] Schema initialization FAILED:', err?.message);
+        if (/type "vector" does not exist/.test(err?.message ?? '')) {
+            console.error('[DB] The pgvector extension is missing. Use the pgvector/pgvector image, or install it as a superuser.');
+        }
+        throw err;
         console.log('[DB] Bot will continue with existing schema');
     }
 }
