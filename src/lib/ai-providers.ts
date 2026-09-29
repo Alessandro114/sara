@@ -5,7 +5,8 @@
 //   1. Groq (key rotation 1→2) — Llama 3.3 70B + Whisper Turbo + Vision 90B
 //   2. Cerebras — OpenAI-compatible chat (chat only)
 //   3. SambaNova — OpenAI-compatible chat (Llama 3.3 70B, DeepSeek V3.2)
-//   4. Mistral — large + voxtral + pixtral (if MISTRAL_API_KEY set)
+//   4. Claude — Anthropic Messages API (chat + vision)
+//   5. Mistral — large + voxtral + pixtral (if MISTRAL_API_KEY set)
 //
 // Gemini REMOVED 2026-07-17 (product decision). There is no emergency provider
 // after Mistral: each *Chain() throws when every provider failed, and callers
@@ -48,6 +49,11 @@ const MISTRAL_EMBED_MODEL = process.env.MISTRAL_EMBED_MODEL || 'mistral-embed';
 // Endpoint is OpenAI-compatible multipart, same shape as Groq's Whisper.
 const MISTRAL_STT_MODEL = process.env.MISTRAL_STT_MODEL || 'voxtral-mini-latest';
 
+// Claude uses Anthropic's Messages API, rather than the OpenAI-compatible
+// Chat Completions API used by the providers below.
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
+const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929';
+
 // Cerebras — wafer-scale inference, ~2000 tok/s, OpenAI-compatible, generous
 // free tier. Same key already used by scala-backend. Slots into the chain right
 // after Groq for max speed/uptime before falling back to Mistral.
@@ -69,7 +75,7 @@ const CEREBRAS_MODEL = process.env.CEREBRAS_MODEL || 'gpt-oss-120b';
 
 // ═══════════════════════════════════════════════════════════
 // SAMBANOVA — OpenAI-compatible, Llama 3.3 70B on RDU hardware
-// Added 2026-07-25 as 3rd fallback (Groq→Cerebras→SambaNova→Mistral)
+// Added 2026-07-25 as 3rd fallback (Groq→Cerebras→SambaNova→Claude→Mistral)
 const SAMBANOVA_KEYS = [
     process.env.SAMBANOVA_API_KEY,
     process.env.SAMBANOVA_API_KEY_2,
@@ -85,7 +91,7 @@ const GROQ_CHAT_MODEL = process.env.GROQ_CHAT_MODEL || 'llama-3.3-70b-versatile'
 const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
 const GROQ_STT_MODEL = process.env.GROQ_STT_MODEL || 'whisper-large-v3-turbo';
 
-export type ProviderName = 'groq' | 'cerebras' | 'sambanova' | 'ollama' | 'mistral' | 'none';
+export type ProviderName = 'groq' | 'cerebras' | 'sambanova' | 'claude' | 'ollama' | 'mistral' | 'none';
 
 export interface ChatMsg {
     role: 'system' | 'user' | 'assistant' | 'tool';
@@ -121,6 +127,7 @@ export interface TranscribeResult { text: string; provider: ProviderName }
 export function hasGroq(): boolean { return GROQ_KEYS.length > 0 }
 export function hasCerebras(): boolean { return CEREBRAS_KEYS.length > 0 }
 export function hasSambaNova(): boolean { return SAMBANOVA_KEYS.length > 0 }
+export function hasClaude(): boolean { return ANTHROPIC_API_KEY.length > 10 }
 export function hasOllama(): boolean { return !!OLLAMA_URL }
 export function hasMistral(): boolean { return !!MISTRAL_API_KEY }
 
@@ -487,7 +494,7 @@ async function mistralEmbed(text: string): Promise<number[]> {
 // ═══════════════════════════════════════════════════════════
 // UNIFIED CHAIN
 // ═══════════════════════════════════════════════════════════
-// Chain order: groq → cerebras → sambanova → mistral [Ollama removed 2026-04-22,
+// Chain order: groq → cerebras → sambanova → claude → mistral [Ollama removed 2026-04-22,
 // Gemini removed 2026-07-17, SambaNova added 2026-07-25]. Each function throws only when ALL providers
 // failed; there is no further fallback for the caller to try.
 
@@ -577,6 +584,123 @@ async function sambanovaChat(messages: ChatMsg[], maxTokens = 600): Promise<Chat
     throw lastErr || new Error('SambaNova: all keys exhausted');
 }
 
+// ═══════════════════════════════════════════════════════════
+// CLAUDE — Anthropic Messages API
+// ═══════════════════════════════════════════════════════════
+
+type ClaudeMessage = { role: 'user' | 'assistant'; content: string };
+
+/** Convert the shared OpenAI-style history into Anthropic's Messages format. */
+function toClaudeMessages(messages: ChatMsg[]): { system?: string; messages: ClaudeMessage[] } {
+    const systemParts: string[] = [];
+    const claudeMessages: ClaudeMessage[] = [];
+
+    for (const message of messages) {
+        if (message.role === 'system') {
+            systemParts.push(message.content);
+            continue;
+        }
+
+        // Claude tool use is intentionally not implemented in this text-only
+        // fallback. Keep a prior tool result legible instead of sending an
+        // invalid `tool` role to the Messages API.
+        const role = message.role === 'assistant' ? 'assistant' : 'user';
+        const content = message.role === 'tool'
+            ? `[Tool result]\n${message.content}`
+            : message.content;
+        const previous = claudeMessages[claudeMessages.length - 1];
+        if (previous?.role === role) {
+            previous.content += `\n\n${content}`;
+        } else {
+            claudeMessages.push({ role, content });
+        }
+    }
+
+    if (claudeMessages.length === 0) throw new Error('Claude requires at least one non-system message');
+    return {
+        ...(systemParts.length > 0 ? { system: systemParts.join('\n\n') } : {}),
+        messages: claudeMessages,
+    };
+}
+
+function claudeText(content: unknown): string {
+    if (!Array.isArray(content)) return '';
+    return content
+        .filter((block: any) => block?.type === 'text' && typeof block.text === 'string')
+        .map((block: any) => block.text)
+        .join('');
+}
+
+async function claudeChat(messages: ChatMsg[], maxTokens = 600): Promise<ChatResult> {
+    if (!hasClaude()) throw new Error('No Anthropic key');
+    const claudeRequest = toClaudeMessages(messages);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+            model: CLAUDE_MODEL,
+            max_tokens: maxTokens,
+            temperature: 0.65,
+            ...claudeRequest,
+        }),
+        signal: AbortSignal.timeout(20000),
+    });
+    if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Claude HTTP ${res.status}: ${body.slice(0, 200)}`);
+    }
+    const data = await res.json() as any;
+    const text = claudeText(data?.content);
+    if (!text) throw new Error('Claude empty');
+    return { text, provider: 'claude' };
+}
+
+async function claudeVision(
+    imageBase64: string,
+    mimeType: string,
+    prompt: string,
+    maxTokens = 600,
+): Promise<ChatResult> {
+    if (!hasClaude()) throw new Error('No Anthropic key');
+    const mediaType = mimeType === 'image/jpg' ? 'image/jpeg' : mimeType;
+    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(mediaType)) {
+        throw new Error(`Claude vision does not support ${mimeType}`);
+    }
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+            model: CLAUDE_MODEL,
+            max_tokens: maxTokens,
+            temperature: 0.65,
+            messages: [{
+                role: 'user',
+                content: [
+                    { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
+                    { type: 'text', text: prompt },
+                ],
+            }],
+        }),
+        signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`Claude vision HTTP ${res.status}: ${body.slice(0, 200)}`);
+    }
+    const data = await res.json() as any;
+    const text = claudeText(data?.content);
+    if (!text) throw new Error('Claude vision empty');
+    return { text, provider: 'claude' };
+}
+
 export async function chatChain(messages: ChatMsg[], maxTokens = 600): Promise<ChatResult> {
     // PII Anonymization — strip personal data from user messages before LLM calls
     const piiMaps: PIIMap[] = [];
@@ -622,6 +746,15 @@ export async function chatChain(messages: ChatMsg[], maxTokens = 600): Promise<C
             return result;
         }
         catch (err) { errors.push(`sambanova: ${(err as Error).message}`); }
+    }
+
+    if (hasClaude()) {
+        try {
+            const result = await claudeChat(safeMessages, maxTokens);
+            result.text = deanonymize(result.text, allOriginals);
+            return result;
+        }
+        catch (err) { errors.push(`claude: ${(err as Error).message}`); }
     }
 
     if (hasMistral()) {
@@ -767,6 +900,11 @@ export async function visionChain(
         catch (err) { errors.push(`groq: ${(err as Error).message}`); }
     }
 
+    if (hasClaude()) {
+        try { return await claudeVision(imageBase64, mimeType, prompt, maxTokens); }
+        catch (err) { errors.push(`claude: ${(err as Error).message}`); }
+    }
+
     if (hasMistral()) {
         try { return await mistralVision(imageBase64, mimeType, prompt, maxTokens); }
         catch (err) { errors.push(`mistral: ${(err as Error).message}`); }
@@ -872,6 +1010,7 @@ export function getProviderStatus() {
         groq: { enabled: hasGroq(), keys: GROQ_KEYS.length, nextKey: groqKeyIdx },
         cerebras: { enabled: hasCerebras(), keys: CEREBRAS_KEYS.length },
         sambanova: { enabled: hasSambaNova(), keys: SAMBANOVA_KEYS.length },
+        claude: { enabled: hasClaude(), model: CLAUDE_MODEL },
         ollama: { enabled: hasOllama(), url: OLLAMA_URL, available: ollamaAvailable },
         mistral: { enabled: hasMistral() },
     };
