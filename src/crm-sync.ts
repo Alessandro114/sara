@@ -246,8 +246,23 @@ export async function syncContactToCRM(payload: CRMSyncPayload): Promise<void> {
 }
 
 // ═══════════════════════════════════════════════════
-// Helper: resolve the SCALA admin user_id for CRM ownership
+// Tenant resolution: which CRM does this contact belong to?
 // ═══════════════════════════════════════════════════
+
+/**
+ * Resolve the CRM owner_user_id for a SARA conversation.
+ *
+ * The prod "sara" WAHA session is shared: most inbound numbers are unknown
+ * prospects contacting SCALA itself (owned by the admin account), but when
+ * the inbound phone matches a registered SCALA customer — `session.scala_user_id`,
+ * set via `lookupScalaUser()` in handlers/text.ts and already used there for
+ * tenant config / branch resolution / insights — the conversation belongs to
+ * that customer's own CRM, not the admin's.
+ */
+export async function getCrmOwnerUserId(scalaUserId?: string | null): Promise<string | null> {
+    if (scalaUserId) return scalaUserId;
+    return getAdminUserId();
+}
 
 let _cachedAdminUserId: string | null = null;
 
