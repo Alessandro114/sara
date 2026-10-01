@@ -27,7 +27,7 @@ import { storeInRAG, ragSearchWithScore, evaluateRetrieval } from '../ai.js';
 import { getTenantConfig } from '../lib/tenant-config.js';
 import { resolveBranchForPhone, branchContextSnippet } from '../lib/branches.js';
 import { updateClientProfile, checkAndGenerateSummary, getAiMode, setAiMode } from '../lib/conversation-memory.js';
-import { syncContactToCRM, detectCRMTags, getAdminUserId } from '../crm-sync.js';
+import { syncContactToCRM, detectCRMTags, getAdminUserId, getCrmOwnerUserId } from '../crm-sync.js';
 import { processPropertyListingFromText, isPropertyListing } from './property-listing.js';
 import { autonomyGate } from '../lib/autonomy-gate.js';
 import { redactPhone } from '../lib/phone-utils.js';
@@ -276,15 +276,15 @@ export async function handleText(
         // Fire-and-forget CRM sync even in human mode
         (async () => {
             try {
-                const adminId = await getAdminUserId();
-                if (adminId) {
+                const ownerId = await getCrmOwnerUserId(session?.scala_user_id);
+                if (ownerId) {
                     const tags = detectCRMTags(text);
                     await syncContactToCRM({
                         phone, name: session?.user_name, company: session?.company_name,
                         email: session?.email, sector: session?.sector,
                         lead_score: Math.min(100, 10 + (session?.messages_count || 0) * 2),
                         tags, note: `[human mode] ${text.substring(0, 200)}`,
-                        owner_user_id: adminId,
+                        owner_user_id: ownerId,
                     });
                 }
             } catch { /* non-fatal */ }
@@ -786,8 +786,8 @@ export async function handleText(
     // Detects tags from user message, enriches progressively, debounced 5min
     (async () => {
         try {
-            const adminId = await getAdminUserId();
-            if (!adminId) return;
+            const ownerId = await getCrmOwnerUserId(session?.scala_user_id);
+            if (!ownerId) return;
 
             // Detect auto-tags from user message
             const crmTags = detectCRMTags(text);
@@ -810,7 +810,7 @@ export async function handleText(
                 lead_score: baseScore,
                 tags: crmTags,
                 note: noteSnippet,
-                owner_user_id: adminId,
+                owner_user_id: ownerId,
             });
         } catch (err: any) {
             console.error('[CRM-SYNC] non-blocking error:', err.message, err.stack?.split('\n').slice(0, 3).join(' | '));
