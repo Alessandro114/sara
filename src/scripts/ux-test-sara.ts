@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════
 // S.A.R.A. UX End-to-End Test Suite
-// Inietta messaggi reali nella pipeline handler e cattura le risposte
+// Injects real messages into the handler pipeline and captures the replies
 // senza usare WhatsApp — testa il comportamento reale del bot.
 //
 // Usage: npx ts-node --esm src/scripts/ux-test-sara.ts
@@ -198,7 +198,7 @@ const tests: TestCase[] = [
         },
     },
 
-    // ── 9. Reactivation dopo opt-out ──
+    // ── 9. Reactivation after opt-out ──
     {
         name: '9. Riattivazione dopo opt-out — "riattiva"',
         text: 'riattiva',
