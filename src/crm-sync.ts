@@ -246,8 +246,22 @@ export async function syncContactToCRM(payload: CRMSyncPayload): Promise<void> {
 }
 
 // ═══════════════════════════════════════════════════
-// Helper: resolve the SCALA admin user_id for CRM ownership
+// Tenant resolution: which CRM does this contact belong to?
 // ═══════════════════════════════════════════════════
+
+/**
+ * Resolve the CRM owner_user_id for a SARA conversation.
+ *
+ * A shared WhatsApp session may serve both unknown prospects (owned by the
+ * admin account) and registered tenants. When the inbound phone matches a
+ * registered user — `session.scala_user_id`, set via `lookupScalaUser()` in
+ * handlers/text.ts and already used there for tenant config / branch
+ * resolution / insights — the conversation belongs to that user's own CRM.
+ */
+export async function getCrmOwnerUserId(scalaUserId?: string | null): Promise<string | null> {
+    if (scalaUserId) return scalaUserId;
+    return getAdminUserId();
+}
 
 let _cachedAdminUserId: string | null = null;
 
