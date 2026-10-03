@@ -252,7 +252,7 @@ if ((process.env.USE_NEW_AI_STACK || '').toLowerCase() === 'false') {
 }
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_MODEL = 'qwen/qwen3.8-27b';
 
 /**
  * Single-key Groq caller. The normal flow uses chatChain(); this is retained

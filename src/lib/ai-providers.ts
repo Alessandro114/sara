@@ -80,7 +80,7 @@ const SAMBANOVA_MODEL = process.env.SAMBANOVA_MODEL || 'Meta-Llama-3.3-70B-Instr
 
 // Model IDs — Groq lineup as of 2026-04-12. Override via env to pick
 // alternatives (qwen/qwen3-32b, openai/gpt-oss-120b, etc).
-const GROQ_CHAT_MODEL = process.env.GROQ_CHAT_MODEL || 'llama-3.3-70b-versatile';
+const GROQ_CHAT_MODEL = process.env.GROQ_CHAT_MODEL || 'qwen/qwen3.8-27b';
 // Llama 4 Scout is Groq's multimodal-capable model (text+vision in one).
 const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
 const GROQ_STT_MODEL = process.env.GROQ_STT_MODEL || 'whisper-large-v3-turbo';

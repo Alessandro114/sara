@@ -53,7 +53,7 @@ function callLLM(host, path, key, model, messages) {
 async function askAI(messages) {
     // Chain: Groq (fast) → Cerebras → SambaNova → graceful fallback
     const providers = [
-        { host:'api.groq.com', path:'/openai/v1/chat/completions', key:GROQ_KEY, model:'llama-3.3-70b-versatile', name:'Groq' },
+        { host:'api.groq.com', path:'/openai/v1/chat/completions', key:GROQ_KEY, model:'qwen/qwen3.8-27b', name:'Groq' },
     ];
     if (CEREBRAS_KEY) providers.push({ host:'api.cerebras.ai', path:'/v1/chat/completions', key:CEREBRAS_KEY, model:'llama-3.3-70b', name:'Cerebras' });
     if (SAMBANOVA_KEY) providers.push({ host:'api.sambanova.ai', path:'/v1/chat/completions', key:SAMBANOVA_KEY, model:'Meta-Llama-3.3-70B-Instruct', name:'SambaNova' });
@@ -134,7 +134,7 @@ setInterval(() => {
         const tgBody = JSON.stringify({chat_id: '${TG_CHAT}', text, parse_mode: 'HTML'});
         // Read Telegram token from env
         try {
-            const tgToken = require('fs').readFileSync('process.env.TELEGRAM_CREDENTIALS_PATH || './.credentials/telegram.env'','utf8').match(/BOT_TOKEN=(.+)/)?.[1]?.trim();
+            const tgToken = require('fs').readFileSync(process.env.TELEGRAM_CREDENTIALS_PATH || './.credentials/telegram.env','utf8').match(/BOT_TOKEN=(.+)/)?.[1]?.trim();
             if (tgToken) {
                 const req = https.request({method:'POST',hostname:'api.telegram.org',path:`/bot${tgToken}/sendMessage`,
                     headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(tgBody)}}, ()=>{});
