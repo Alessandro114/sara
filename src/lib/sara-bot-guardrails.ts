@@ -7,7 +7,7 @@
 // the output to catch any leaked persona markers.
 //
 // NOTE: this file is intentionally NOT called `sara-guardrails.ts` — that
-// exists in scala-backend and is a different module. Keep the names apart
+// exists elsewhere in the platform and is a different module. Keep the names apart
 // to avoid import confusion during rsync.
 // ═══════════════════════════════════════════════════
 
@@ -105,11 +105,10 @@ const LEAK_MARKERS: Array<{ pattern: RegExp; label: string }> = [
     { pattern: /system[_ ]instruction/i, label: 'system_instruction_leak' },
     { pattern: /persona[_ ]instruction/i, label: 'persona_instruction_leak' },
     { pattern: /sector_prompts/i, label: 'sector_prompts_leak' },
-    { pattern: /\/home\/ale\//, label: 'filepath_leak' },
+    { pattern: /\/home\/[a-z][\w-]*\//i, label: 'filepath_leak' },
     // Internal source paths — the bot talks to restaurant owners, it has no
     // legitimate reason to ever name a file in this repo.
     { pattern: /\b(?:src|dist|lib|scripts)\/[\w./-]+\.(?:ts|tsx|js|mjs|cjs|json)\b/i, label: 'source_path_leak' },
-    { pattern: /scala-backend|whatsapp-bot\/src/i, label: 'repo_path_leak' },
     // SCALA acronym must never be decoded as Cash vs Confirmation
     { pattern: /\bcash\s+vs\s+confirmation\b/i, label: 'acronym_leak' },
     { pattern: /\bs\s*=\s*strategy.*c\s*=\s*(cash|confirmation)/i, label: 'acronym_breakdown' },

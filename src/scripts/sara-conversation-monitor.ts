@@ -160,8 +160,7 @@ const WRONG_PLAN_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
 // Model name leak
 const MODEL_LEAK_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
     { pattern: /\b(?:gemini|groq|mistral|llama|claude|gpt-?\d|openai)\b/i, label: 'leak_model_name' },
-    { pattern: /\/home\/ale\//i, label: 'leak_filepath' },
-    { pattern: /scala-backend|whatsapp-bot\/src/i, label: 'leak_repo_path' },
+    { pattern: /\/home\/[a-z][\w-]*\//i, label: 'leak_filepath' },
     { pattern: /system[_ ]instruction/i, label: 'leak_system_instruction' },
     { pattern: /persona[_ ]instruction/i, label: 'leak_persona_instruction' },
 ];
