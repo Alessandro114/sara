@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════
-// SARA — Tone-of-voice presets (whatsapp-bot)
+// SARA — Tone-of-voice presets
 // ═══════════════════════════════════════════════════
 // 2026-04-16 Audit multilingua fix P2: 4 tones x 4 languages (it/en/es/pt).
 // Mirrors the backend tone-presets module

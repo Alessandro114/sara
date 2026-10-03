@@ -3,7 +3,7 @@
 // Queries sara_autonomy_settings from SCALA DB and decides
 // whether to execute (send) or enqueue for human approval.
 //
-// Level semantics (mirrors scala-backend/src/lib/sara-autonomy.ts):
+// Level semantics:
 //   0 = OFF       — pass-through, current behavior unchanged
 //   1 = OSSERVA   — always queue, never auto-send
 //   2 = SEMI-AUTO — queue promo/upsell; send reply/faq/reminder

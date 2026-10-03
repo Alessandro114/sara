@@ -55,7 +55,7 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929';
 
 // Cerebras — wafer-scale inference, ~2000 tok/s, OpenAI-compatible, generous
-// free tier. Same key already used by scala-backend. Slots into the chain right
+// free tier. Same key as the other services of the platform. Slots into the chain right
 // after Groq for max speed/uptime before falling back to Mistral.
 // Cerebras key pool — rotate across multiple free accounts (each account has its
 // own rate limit, so N accounts ≈ N× throughput). Same trick as GROQ_KEYS.
