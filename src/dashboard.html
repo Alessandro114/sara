@@ -195,8 +195,13 @@ body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); 
         <div class="detail-row"><strong>Email:</strong> <span id="cEmail">—</span> · <strong>Stage:</strong> <span id="cStage">—</span></div>
         <div class="detail-row"><strong>Score:</strong> <span id="cScore">—</span> · <strong>Messaggi:</strong> <span id="cMsgCount">—</span> · <strong>Lingua:</strong> <span id="cLang">—</span></div>
         <div class="lead-insights" id="cInsights"></div>
+        <div class="detail-row" style="margin-top:6px"><strong>Strumenti eseguiti:</strong> <span id="cTools">—</span></div>
       </div>
       <div class="actions">
+        <label for="takeoverMode" style="font-size:11px;color:var(--text-dim)">Modalità</label>
+        <select id="takeoverMode" onchange="setTakeover(this.value)" style="min-height:32px">
+          <option value="ai">🤖 AI</option><option value="human">🧑 Umano</option><option value="hybrid">✍️ Ibrido (bozza)</option>
+        </select>
         <button class="btn" onclick="sendPromo()">🎁 Invia Promo</button>
         <button class="btn danger" onclick="resetLead()">🗑️ Reset</button>
       </div>
@@ -371,8 +376,28 @@ async function selectLead(phone) {
       return `<div class="msg ${m.direction}">${mt}<div>${esc(m.content||'').replace(/\n/g,'<br>')}</div><div class="time">${t}</div></div>`;
     }).join('');
     p.scrollTop = p.scrollHeight;
+    loadTakeoverAndTools(phone);
   } catch { document.getElementById('msgPanel').innerHTML = '<div class="empty"><p>Errore</p></div>'; }
 }
+
+// ═══ Takeover + tool calls (issue #9) ═══
+async function loadTakeoverAndTools(phone) {
+  try {
+    const [m, t] = await Promise.all([
+      get(`/api/sara/leads/${encodeURIComponent(phone)}/takeover`),
+      get(`/api/sara/conversations/${encodeURIComponent(phone)}/tools?limit=10`),
+    ]);
+    document.getElementById('takeoverMode').value = m.mode;
+    document.getElementById('cTools').textContent = t.tool_calls.length
+      ? t.tool_calls.map(c => `${c.success ? '✅' : '❌'} ${c.tool} (${c.risk})`).join(' · ') : 'nessuno';
+  } catch { document.getElementById('cTools').textContent = '—'; }
+}
+async function setTakeover(mode) {
+  if (!currentPhone) return;
+  await post(`/api/sara/leads/${encodeURIComponent(currentPhone)}/takeover`, { mode });
+}
+// Live refresh of the open conversation (no WebSocket needed for this volume)
+setInterval(() => { if (currentPhone && document.visibilityState === 'visible') selectLead(currentPhone); }, 15000);
 
 // ═══ Insights Tab ═══
 async function loadInsights() {

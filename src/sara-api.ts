@@ -2,6 +2,7 @@
 // S.A.R.A. — REST API Bridge for app.get-scala.com
 // Cross-VM API: app.get-scala.com (VM1) ←→ S.A.R.A. (VM2)
 // ═══════════════════════════════════════════════════
+import { registerMonitorRoutes } from './lib/monitor.js';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { readFileSync, existsSync } from 'fs';
@@ -411,6 +412,8 @@ api.post('/api/sara/leads/:phone/takeover', async (request, reply) => {
     await setTakeoverMode(phone, mode, pool, { taken_by: 'admin', reason, auto_resume_hours });
     return reply.send({ ok: true, phone, mode });
 });
+
+registerMonitorRoutes(api, pool);
 
 // ─── Register Web Widget + Dashboard routes ───
 await registerWidgetRoutes(api);

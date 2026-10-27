@@ -2,6 +2,7 @@
 // SCALA WhatsApp Bot — AI Layer (v3 — with follow-up generation)
 // ═══════════════════════════════════════════════════
 import { emitWebhook } from './lib/webhooks.js';
+import { logToolCall } from './lib/monitor.js';
 import { pool, BOT_NAME, CTA_URLS } from './config.js';
 import { SECTOR_PROMPTS, PERSONA_INSTRUCTION } from './sectors.js';
 import { getVerticalPrompt, ANTI_HALLUCINATION_FOOTER } from './vertical-prompts.js';
@@ -759,6 +760,7 @@ Emoji: ${agentProfile.emoji_usage || 'minimal'}`;
                         const { toolName, result: toolResult } = await dispatchToolCall(tc, toolContext);
                         const risk = getToolRisk(toolName);
                         console.log(`[AI-AGENT] Tool ${toolName} (risk=${risk}) → ${toolResult.success ? 'OK' : 'FAIL'}`);
+                        void logToolCall(pool, toolContext.phone, toolName, risk, toolResult.success);
                         if (toolResult.success && toolName.startsWith('book_')) emitWebhook('booking.confirmed', { phone: toolContext.phone, tool: toolName, result: toolResult.data ?? {} });
                         if (toolResult.success && toolName === 'register_lead') emitWebhook('lead.qualified', { phone: toolContext.phone, result: toolResult.data ?? {} });
 
