@@ -13,6 +13,7 @@ import { transcribeChain } from '../lib/ai-providers.js';
 import { handleVoiceCRM } from './voice-crm.js';
 import { redactPhone } from '../lib/phone-utils.js';
 import { guardOutput } from '../lib/output-guard.js';
+import { shouldSpeak, synthesize } from '../lib/tts.js';
 
 // Multilingual messages
 const MESSAGES: Record<string, { error: string; prompt: string; ragPrefix: string }> = {
@@ -138,6 +139,14 @@ export async function handleAudio(
     // FIX #2: route media AI output through the same guardrails as text.ts
     response = guardOutput(response, lang, { phone });
 
+    if (shouldSpeak(true, response)) {
+        const mp3 = await synthesize(response, lang);
+        if (mp3) {
+            await sock.sendMessage(phone, { voice: { data: mp3, mimetype: 'audio/mpeg' } });
+            console.log(`[AUDIO] ${redactPhone(phone)}: voice reply (${(mp3.length / 1024).toFixed(0)}KB)`);
+            return;
+        }
+    }
     await sendHumanized(sock, phone, response);
     console.log(`[AUDIO] ${redactPhone(phone)}: ${(media.buffer.length / 1024).toFixed(0)}KB processed`);
 }

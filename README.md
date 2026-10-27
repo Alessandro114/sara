@@ -169,6 +169,18 @@ Key environment variables (see `.env.example` for the full list):
 | `OLLAMA_BASE_URL` | No | Ollama URL if using local embeddings |
 | `SARA_AUTONOMY_LEVEL` | No | `OFF` / `OBSERVE` / `SEMI_AUTO` / `FULL_AUTO`. Default: `OBSERVE` |
 
+### Telegram channel
+
+Set `TELEGRAM_BOT_TOKEN` (from @BotFather) and SARA also answers private Telegram chats with the same handlers (text, voice notes, photos, documents, location). Chats are stored as `tg:<chat_id>`. `TELEGRAM_ALLOWED_CHATS` (comma list of chat ids) restricts who can talk to the bot. It uses long polling, so no public URL is needed. Group chats are ignored.
+
+### Voice replies (TTS)
+
+`SARA_TTS_REPLY=voice_only` answers voice notes with a voice note, `always` voices every short reply (up to `SARA_TTS_MAX_CHARS`, default 600), `off` (default) disables it. Uses [edge-tts](https://github.com/rany2/edge-tts) (`pip install edge-tts`, no API key); override voices with `SARA_TTS_VOICE_IT` etc. If synthesis fails SARA sends the text reply. Voice notes are sent on WhatsApp through WAHA `sendVoice` and on Telegram through `sendVoice`.
+
+### Dashboard
+
+`/api/sara/dashboard` (API key required) lists leads, the full message history (AI and customer), the tools SARA executed in each conversation, and lets you switch a conversation between AI, human and hybrid mode. The open conversation refreshes every 15 seconds.
+
 ### Webhooks (n8n / Make.com / Zapier)
 
 Set a URL per event to have SARA POST a JSON event; an empty URL disables that event.
