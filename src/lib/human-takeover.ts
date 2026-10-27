@@ -14,6 +14,7 @@
 
 import type pg from 'pg';
 import pino from 'pino';
+import { emitWebhook } from './webhooks.js';
 import { normalizePhone as normalizePhoneUtil, redactPhone } from './phone-utils.js';
 
 const log = pino({ name: 'takeover' });
@@ -132,6 +133,7 @@ export async function setTakeoverMode(
   );
 
   log.info({ phone: redact(normalized), mode, taken_by: options?.taken_by }, 'takeover mode changed');
+  emitWebhook('takeover.requested', { phone: normalized, mode, taken_by: options?.taken_by ?? 'operator', reason: options?.reason ?? null });
 }
 
 /**

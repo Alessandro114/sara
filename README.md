@@ -122,6 +122,33 @@ SARA Core (Node.js + Fastify)
 Response -> Customer
 ```
 
+### Message flow
+
+1. **WAHA** receives the WhatsApp message and POSTs it to `/api/waha-webhook` (`src/sara-api.ts`; `waha-bridge.cjs` is the bridge process).
+2. **Handlers** (`src/handlers/`) pick the type: text, voice (transcribed), image, document.
+3. **Guards** run first: prompt-injection guard, PII anonymizer, and the human-takeover check (`src/lib/human-takeover.ts`): if an operator took the chat (`human`) SARA only listens; in `hybrid` it drafts and waits.
+4. **Context**: sector detection (`src/sectors.ts`), the vertical prompt (`src/vertical-prompts.ts`, `src/prompts/vertical.<lang>.json`), memory (L4 history, L5 profile, L6 RAG).
+5. **LLM chain** (`src/lib/ai-providers.ts`): Groq, then Cerebras, SambaNova, Mistral on failure or rate limit.
+6. **Tool dispatcher** (`src/lib/tool-dispatcher.ts`): when the model calls a tool (book_table, check_availability, ...), the handler runs against the database and the result is fed back to the model for the final text.
+7. **Output guards** (`src/lib/output-guard.ts`, `output-enforcer.ts`) check the reply, then it is sent through WAHA.
+
+### RAG pipeline
+
+Documents are chunked and embedded with a 1024-dimension model into PostgreSQL + pgvector. At question time the query is embedded with the same model, the nearest chunks are retrieved (hybrid with BM25, `src/lib/bm25-search.ts`) and injected into the prompt as the L6 memory layer. Ingest and query must use the same model (see Configuration).
+
+### Autonomy gate and risk classifier
+
+Each tool has a risk level (`getToolRisk`: `low` info-only, `medium` creates or changes a record, unknown tools default to `medium`). The tenant's autonomy level (`sara_autonomy_settings`) decides what runs on its own (`shouldQueueAgenticAction`, `src/lib/autonomy-gate.ts`):
+
+| Level | low | medium | high / critical |
+|---|---|---|---|
+| OFF | runs | runs | runs |
+| OBSERVE | queued | queued | queued |
+| SEMI_AUTO | runs | queued | queued |
+| FULL_AUTO | runs | runs | queued |
+
+Queued actions wait for human approval instead of being executed.
+
 ---
 
 ## Configuration
@@ -137,10 +164,23 @@ Key environment variables (see `.env.example` for the full list):
 | `DATABASE_URL` | Yes | PostgreSQL connection string (pgvector required) |
 | `WAHA_URL` | Yes | WAHA instance URL (default: `http://localhost:3004`) |
 | `WAHA_API_KEY` | Yes | WAHA authentication key |
-| `VERTICAL` | Yes | Active vertical slug (e.g. `dineos`, `propertyos`, `beautyos`) |
+| `SARA_VERTICALS` | No | Comma list of tool keys to keep active (e.g. `dine` for a restaurant). Empty = all verticals; other sectors get the general tools only |
 | `EMBED_MODEL` | No | Embedding model — must be 1024d. Default: `mxbai-embed-large` |
 | `OLLAMA_BASE_URL` | No | Ollama URL if using local embeddings |
 | `SARA_AUTONOMY_LEVEL` | No | `OFF` / `OBSERVE` / `SEMI_AUTO` / `FULL_AUTO`. Default: `OBSERVE` |
+
+### Webhooks (n8n / Make.com / Zapier)
+
+Set a URL per event to have SARA POST a JSON event; an empty URL disables that event.
+
+| Event | Env var | `data` |
+|---|---|---|
+| `conversation.started` | `SARA_WEBHOOK_CONVERSATION_STARTED` | `phone`, `sector` |
+| `booking.confirmed` | `SARA_WEBHOOK_BOOKING_CONFIRMED` | `phone`, `tool`, `result` |
+| `takeover.requested` | `SARA_WEBHOOK_TAKEOVER_REQUESTED` | `phone`, `mode`, `taken_by`, `reason` |
+| `lead.qualified` | `SARA_WEBHOOK_LEAD_QUALIFIED` | `phone`, `result` |
+
+Body: `{"event": "...", "timestamp": "<ISO 8601>", "data": {...}}`, header `X-Sara-Event`. If `SARA_WEBHOOK_SECRET` is set the body is signed: `X-Sara-Signature: sha256=<HMAC-SHA256 hex>`. Failed calls (network, 5xx, 429) are retried with exponential backoff (`SARA_WEBHOOK_RETRIES`, default 3; `SARA_WEBHOOK_TIMEOUT_MS`, default 5000); other 4xx are not retried. Delivery never blocks the chat reply.
 
 > The embedding model **must produce 1024-dimensional vectors**. Changing to a different dimension silently breaks RAG retrieval. Supported: `mxbai-embed-large`, `jina-embeddings-v3`. Do not use `nomic-embed-text` (768d).
 

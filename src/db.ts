@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════
 // SCALA WhatsApp Bot — Database Layer (v2)
 // ═══════════════════════════════════════════════════
+import { emitWebhook } from './lib/webhooks.js';
 import { pool } from './config.js';
 export { pool };
 import { syncLeadToSCALA } from './crm-sync.js';
@@ -271,6 +272,7 @@ export async function upsertSession(phone: string, data: Partial<{
             'INSERT INTO wa_sessions (phone, sector, messages_count) VALUES ($1, $2, 1)',
             [phone, data.sector || 'general']
         );
+        emitWebhook('conversation.started', { phone, sector: data.sector || 'general' });
     } else {
         const sets: string[] = ['last_message=now()', 'messages_count=messages_count+1'];
         const params: any[] = [];

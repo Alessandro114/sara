@@ -58,6 +58,8 @@ services:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/sara
       WAHA_API_URL: http://waha:3000
       WAHA_WEBHOOK_URL: http://sara:3006/api/waha-webhook
+      # Single-vertical self-hosting: e.g. SARA_VERTICALS=dine (empty = all verticals)
+      SARA_VERTICALS: ${SARA_VERTICALS:-}
     depends_on:
       postgres:
         condition: service_healthy
