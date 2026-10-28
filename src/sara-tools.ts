@@ -655,7 +655,20 @@ const SECTOR_TO_TOOLS_KEY: Record<string, string> = {
  */
 export function getSectorTools(sector: string): SaraTool[] {
     const key = SECTOR_TO_TOOLS_KEY[sector] || 'general';
+    const allowed = activeVerticals();
+    if (allowed && key !== 'general' && !allowed.has(key)) return SARA_TOOLS.general;
     return SARA_TOOLS[key] || SARA_TOOLS.general;
+}
+
+/**
+ * Self-hosters who run a single vertical set SARA_VERTICALS=dine (comma list of tool keys,
+ * i.e. the keys of SARA_TOOLS). Sectors outside the list get the 'general' tools only.
+ * Unset/empty = every vertical is active (default). Read on each call so tests can change it.
+ */
+export function activeVerticals(): Set<string> | null {
+    const raw = (process.env.SARA_VERTICALS || '').trim();
+    if (!raw) return null;
+    return new Set(raw.split(',').map(v => v.trim().toLowerCase()).filter(Boolean));
 }
 
 /**

@@ -1,6 +1,8 @@
 // ═══════════════════════════════════════════════════
 // SCALA WhatsApp Bot — Database Layer (v2)
 // ═══════════════════════════════════════════════════
+import { emitWebhook } from './lib/webhooks.js';
+import { TOOL_CALLS_DDL } from './lib/monitor.js';
 import { pool } from './config.js';
 export { pool };
 import { syncLeadToSCALA } from './crm-sync.js';
@@ -73,6 +75,7 @@ export async function initDB() {
 
         CREATE INDEX IF NOT EXISTS idx_wa_rag_sector ON wa_rag_documents (sector);
         CREATE INDEX IF NOT EXISTS idx_wa_messages_phone ON wa_messages (phone, created_at DESC);
+        ${TOOL_CALLS_DDL}
         CREATE INDEX IF NOT EXISTS idx_wa_followups_pending ON wa_lead_followups (scheduled_at) WHERE sent = false AND cancelled = false;
 
         -- Migrate existing sessions: add new columns if missing
@@ -271,6 +274,7 @@ export async function upsertSession(phone: string, data: Partial<{
             'INSERT INTO wa_sessions (phone, sector, messages_count) VALUES ($1, $2, 1)',
             [phone, data.sector || 'general']
         );
+        emitWebhook('conversation.started', { phone, sector: data.sector || 'general' });
     } else {
         const sets: string[] = ['last_message=now()', 'messages_count=messages_count+1'];
         const params: any[] = [];

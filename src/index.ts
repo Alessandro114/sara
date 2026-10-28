@@ -4,6 +4,7 @@
 // Engine: WAHA by default (WA_ENGINE=waha), whatsapp-web.js as legacy
 // fallback (WA_ENGINE=wwebjs). Baileys removed May 2026.
 // ═══════════════════════════════════════════════════
+import { telegramEnabled, wrapSockWithTelegram } from './telegram-adapter.js';
 import 'dotenv/config';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
@@ -125,9 +126,12 @@ async function startBot() {
     startSilentGroupFlushTimer(pool);
 
     const WA_ENGINE = (process.env.WA_ENGINE || 'waha').toLowerCase();
-    const { sock, waitForConnection } = WA_ENGINE === 'wwebjs'
+    const { sock: waSock, waitForConnection } = WA_ENGINE === 'wwebjs'
         ? await createWWJSBot()
         : await createWAHABot();
+    // Optional Telegram channel (TELEGRAM_BOT_TOKEN): same handlers, "tg:<chat_id>" jids
+    const tgSock = telegramEnabled() ? wrapSockWithTelegram(waSock) : null;
+    const sock: SockLike = tgSock ?? waSock;
 
     // Wait for WhatsApp Business connection (QR scan)
     await waitForConnection();
@@ -214,6 +218,9 @@ async function startBot() {
                 });
         }
     });
+
+    // Handlers are registered: only now start pulling Telegram updates
+    tgSock?.startPolling();
 }
 
 // Extracted so we can feed it to the per-user queue. Handles media routing,

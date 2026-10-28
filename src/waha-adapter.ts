@@ -234,6 +234,14 @@ export async function createWAHABot(): Promise<{ sock: SockLike; waitForConnecti
       try {
         if (content.text) {
           await wahaFetch('/api/sendText', 'POST', { session: WAHA_SESSION_NAME, chatId: jid, text: content.text });
+        } else if (content.voice) {
+          // content.voice = { data: Buffer, mimetype } — WAHA converts to an opus voice note
+          await wahaFetch('/api/sendVoice', 'POST', {
+            session: WAHA_SESSION_NAME,
+            chatId: jid,
+            convert: true,
+            file: { mimetype: content.voice.mimetype || 'audio/mpeg', filename: 'reply.mp3', data: Buffer.from(content.voice.data).toString('base64') },
+          });
         } else if (content.image) {
           await wahaFetch('/api/sendImage', 'POST', {
             session: WAHA_SESSION_NAME,
