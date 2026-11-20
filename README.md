@@ -8,7 +8,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Stars](https://img.shields.io/github/stars/Alessandro114/sara?style=social)](https://github.com/Alessandro114/sara)
 
-**SARA is a self-hostable AI agent for WhatsApp that understands your industry. 13 industry brains included in this repo; 20 verticals are defined in the open [`@scala-ai/agent-definitions`](https://github.com/Alessandro114/scala-agent-definitions) schema (Apache-2.0), and you can write your own. 87 tool definitions. Function calling. RAG. Multi-language.**
+**SARA is a self-hostable AI agent for WhatsApp that understands your industry. 13 industry brains included in this repo; 20 verticals are defined in the open [`@scala-ai/agent-definitions`](https://github.com/Alessandro114/scala-agent-definitions) schema (Apache-2.0), and you can write your own. 80 tool definitions in the open schema (84 with the general agent). Function calling. RAG. Multi-language.**
 
 [Documentation](#configuration) · [Cloud Version](https://get-scala.com) · [Contributing](CONTRIBUTING.md)
 
@@ -33,7 +33,7 @@
 
 - Multi-provider LLM chain (Groq → Cerebras → SambaNova → Mistral) with automatic failover — zero downtime when one provider is rate-limited
 - RAG retrieval: PostgreSQL + pgvector (1024d embeddings) + BM25 keyword fallback for hybrid search
-- Function calling with 87 tool definitions across 20 industry verticals — agents can actually *do* things, not just respond
+- Function calling with 83 runtime tools (`src/sara-tools.ts`, 19 verticals plus `general`) and 80 tool definitions across the 20 verticals of the open schema — agents can actually *do* things, not just respond
 - PII anonymization before every external LLM call — names, phones, emails are masked at the boundary
 - Prompt injection guardrails: 40+ patterns, 4 languages, evaluated before every turn
 - Hallucination detection + confidence scoring on AI responses
@@ -48,28 +48,30 @@
 
 ### Industry Verticals (20)
 
-| Vertical | Key tools |
-|---|---|
-| DineOS (restaurants) | Table booking, menu, allergens, price list |
-| PropertyOS (real estate) | Listings, valuations, inspections |
-| BeautyOS (salons) | Appointments, treatments, membership |
-| MotorOS (automotive) | Test drives, service booking, trade-in |
-| WellnessOS (gyms) | Class booking, membership management |
-| PraxisOS (clinics) | Patient scheduling, intake forms |
-| ShopOS (retail) | Product search, stock check, reservations |
-| AgencyOS | Client intake, brief collection |
-| StudioOS | Creative project booking, SAL generation |
-| CleanOS | Cleaning service scheduling |
-| TravelOS | Itinerary search, booking requests |
-| NetworkOS | Event registration, networking |
-| DermalyOS | Dermatology intake, appointment |
-| FranchiseOS | Franchise lead qualification |
-| ProjectOS | Project status, task updates |
-| ReputationOS | Review collection, feedback routing |
-| LandIQ | Real estate feasibility queries |
-| AdOS | Campaign briefing, performance queries |
-| ServiceOS | Field service scheduling |
-| TenderOS (public tenders) | Tender parsing, deadlines, gap analysis, checklists |
+| Vertical | Brain in this repo | Key tools |
+|---|---|---|
+| DineOS (restaurants) | Yes | Table booking, menu, allergens, price list |
+| PropertyOS (real estate) | Yes | Listings, valuations, inspections |
+| BeautyOS (salons) | Yes | Appointments, treatments, membership |
+| MotorOS (automotive) | Yes | Test drives, service booking, trade-in |
+| WellnessOS (gyms) | Definition only | Class booking, membership management |
+| PraxisOS (clinics) | Yes | Patient scheduling, intake forms |
+| ShopOS (retail) | Definition only | Product search, stock check, reservations |
+| AgencyOS | Yes | Client intake, brief collection |
+| StudioOS | Yes | Creative project booking, SAL generation |
+| CleanOS | Yes | Cleaning service scheduling |
+| TravelOS | Yes | Itinerary search, booking requests |
+| NetworkOS | Yes | Event registration, networking |
+| DermalyOS | Yes | Dermatology intake, appointment |
+| FranchiseOS | Definition only | Franchise lead qualification |
+| ProjectOS | Definition only | Project status, task updates |
+| ReputationOS | Definition only | Review collection, feedback routing |
+| LandIQ | Yes | Real estate feasibility queries |
+| AdOS | Definition only | Campaign briefing, performance queries |
+| ServiceOS | Definition only | Field service scheduling |
+| TenderOS (public tenders) | Definition only | Tender parsing, deadlines, gap analysis, checklists |
+
+13 brains = 12 of the verticals above (every row marked "Yes") plus one `general` brain, each in Italian, English, Spanish and Portuguese (`src/prompts/vertical.<lang>.json`). The other 8 verticals are defined in the open schema (`definitions/*.json`, 80 tools for the 20 verticals, 84 with the `general` agent) but ship without a dedicated brain in this repo. Verified against the code on 2026-11-20.
 
 ### Platform
 
@@ -152,7 +154,7 @@ Key environment variables (see `.env.example` for the full list):
 |---|---|---|
 | AI chat engine | Yes | Yes |
 | 20 verticals defined / 13 brains included | Yes | Yes |
-| Function calling (30+ tools) | Yes | Yes |
+| Function calling (83 runtime tools) | Yes | Yes |
 | RAG engine | Yes | Yes |
 | Multi-language | Yes | Yes |
 | Dashboard | Yes | Yes |
@@ -209,7 +211,7 @@ Part of the **S.C.A.L.A.** open-source ecosystem:
 | [SARA](https://github.com/Alessandro114/sara) | WhatsApp AI agent — 20 verticals defined, 13 brains included |
 | [LandIQ](https://github.com/Alessandro114/landiq) | Autonomous real estate feasibility agent |
 | [scala-sites](https://github.com/Alessandro114/scala-sites) | 100 vertical website templates (Next.js, MIT) |
-| [scala-agent-definitions](https://github.com/Alessandro114/scala-agent-definitions) | 87 AI tool definitions for 20 verticals |
+| [scala-agent-definitions](https://github.com/Alessandro114/scala-agent-definitions) | 80 AI tool definitions for 20 verticals |
 | [scala-mcp-server](https://github.com/Alessandro114/scala-mcp-server) | MCP server for Claude/ChatGPT — 250M+ companies |
 | [Score SDKs](https://github.com/Alessandro114/scala-score-js) | Company data — [JS](https://npmjs.com/package/scala-score) · [Python](https://pypi.org/project/scala-score) · [Go](https://github.com/Alessandro114/company-lookup-go) · [Rust](https://github.com/Alessandro114/score-rust) · [Deno](https://github.com/Alessandro114/scala-score-deno) |
 | [enrich-companies](https://github.com/Alessandro114/enrich-companies) | CSV enrichment CLI — [npm](https://npmjs.com/package/enrich-companies) · [pip](https://pypi.org/project/enrich-companies) |
